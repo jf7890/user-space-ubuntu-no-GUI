@@ -1,0 +1,131 @@
+services:
+  dvwa:
+    image: vulnerables/web-dvwa
+    container_name: dvwa
+    ports:
+      - "8080:80"   # optional: open DVWA on Kali host
+    volumes:
+      - ./config/mysql-logging.cnf:/etc/mysql/conf.d/logging.cnf:ro
+      - ./logs/mysql:/var/log/mysql
+      - ./logs/apache:/var/log/apache2
+    environment:
+      - MYSQL_PASS=dvwa
+      - MYSQL_USER=dvwa
+      - MYSQL_DB=dvwa
+      - DB_SERVER=127.0.0.1
+      - RECAPTCHA_PRIV_KEY=
+      - RECAPTCHA_PUB_KEY=
+    restart: unless-stopped
+    networks:
+      - capstone-dmz-network
+
+  postgres:
+    image: postgres:15-alpine
+    container_name: postgres
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./config/postgres-logging.conf:/etc/postgresql/postgresql.conf:ro
+      - ./scripts/init-postgres.sh:/docker-entrypoint-initdb.d/init-postgres.sh:ro
+      - ./logs/postgres:/var/log/postgresql
+    environment:
+      POSTGRES_DB: juiceshop
+      POSTGRES_USER: juiceshop
+      POSTGRES_PASSWORD: juiceshop
+      PGDATA: /var/lib/postgresql/data/pgdata
+    command: >
+      postgres -c config_file=/etc/postgresql/postgresql.conf
+    restart: unless-stopped
+    networks:
+      - capstone-dmz-network
+
+  juiceshop:
+    image: bkimminich/juice-shop
+    container_name: juiceshop
+    ports:
+      - "3000:3000" # optional: open JuiceShop on Kali host
+    depends_on:
+      - postgres
+    volumes:
+      - ./logs/juiceshop:/var/log/juiceshop
+    environment:
+      - NODE_ENV=production
+    restart: unless-stopped
+    networks:
+      - capstone-dmz-network
+
+  nginx-love-postgres:
+    image: postgres:15-alpine
+    container_name: nginx-love-postgres
+    volumes:
+      - postgres_nginx_love_data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_DB: nginxlove
+      POSTGRES_USER: nginxlove
+      POSTGRES_PASSWORD: ${NGINXLOVE_DB_PASSWORD:-Theshine2025!}
+    restart: unless-stopped
+    networks:
+      - capstone-dmz-network
+
+  nginx-love-backend:
+    image: jf7890/backend_theshine:v3
+    container_name: nginx-love-backend
+    depends_on:
+      - nginx-love-postgres
+    ports:
+      - "5044:5044"  # optional: open API on Kali host
+    volumes:
+      - ./logs/nginx:/var/log/nginx
+      - ./logs/modsecurity:/var/log/modsecurity
+      - ./config/modsecurity.conf:/etc/modsecurity/modsecurity.conf:ro
+      - ./scripts/add-log-dir.sh:/usr/local/bin/add-log-dir.sh:ro
+      - backup:/backup
+    environment:
+      - ConnectionStrings__DefaultConnection=server=nginx-love-postgres;port=5432;database=nginxlove;user=nginxlove;password=${NGINXLOVE_DB_PASSWORD:-Theshine2025!};
+    command: ["/bin/sh", "-c", "chmod +x /usr/local/bin/add-log-dir.sh && /usr/local/bin/add-log-dir.sh && dotnet backend.dll"]
+    restart: unless-stopped
+    networks:
+      - capstone-dmz-network
+
+  nginx-love-frontend:
+    build:
+      context: ./nginx-love
+      dockerfile: Dockerfile.frontend
+    container_name: nginx-love-frontend
+    depends_on:
+      - nginx-love-backend
+    ports:
+      - "8081:80"  # optional: open nginx-love UI on Kali host
+    restart: unless-stopped
+    networks:
+      - capstone-dmz-network
+
+  nginx-love-bootstrap:
+    build:
+      context: ./nginx-love
+      dockerfile: Dockerfile.bootstrap
+    container_name: nginx-love-bootstrap
+    depends_on:
+      - nginx-love-backend
+      - dvwa
+      - juiceshop
+    environment:
+      - API_URL=http://nginx-love-backend:5044
+      - ADMIN_PASSWORD=${NGINXLOVE_ADMIN_PASSWORD:-admin}
+      - NEW_ADMIN_PASSWORD=${NGINXLOVE_NEW_ADMIN_PASSWORD:-admin}
+    volumes:
+      - nginx_love_bootstrap_state:/state
+      - ./scripts/bootstrap-nginx_love.sh:/bootstrap-nginx_love.sh:ro
+    command: ["/bin/sh", "-c", "chmod +x /bootstrap-nginx_love.sh && /bootstrap-nginx_love.sh"]
+    restart: "no"
+    networks:
+      - capstone-dmz-network
+
+networks:
+  capstone-dmz-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  postgres_nginx_love_data:
+  nginx_love_bootstrap_state:
+  backup:

@@ -22,19 +22,21 @@ source "proxmox-iso" "kali-xfce" {
   template_description = var.template_description
   os                   = "l26"
 
-  # ISO
+boot_iso {
+  type = "ide"
+
   iso_url          = var.kali_iso_url
   iso_checksum     = var.kali_iso_checksum
   iso_storage_pool = var.iso_storage
-  unmount_iso      = true
-
+  unmount          = true
+}
   # Guest
   qemu_agent      = true
   scsi_controller = "virtio-scsi-pci"
 
   disks {
     disk_size    = var.disk_size
-    format       = "raw" # local-lvm typically requires raw
+    format       = "raw"
     storage_pool = var.vm_storage
     type         = "virtio"
   }
@@ -47,11 +49,6 @@ source "proxmox-iso" "kali-xfce" {
   network_adapters {
     model    = "virtio"
     bridge   = var.bridge_wan
-    firewall = false
-  }
-  network_adapters {
-    model    = "virtio"
-    bridge   = var.bridge_lan
     firewall = false
     vlan_tag = var.lan_vlan_tag
   }
@@ -93,36 +90,4 @@ boot_command = [
 
   # If you provide PACKER_SSH_PRIVATE_KEY_FILE, packer will prefer it.
   ssh_private_key_file = var.ssh_private_key_file != "" ? var.ssh_private_key_file : null
-}
-
-build {
-  name    = "kali"
-  sources = ["source.proxmox-iso.kali-xfce"]
-
-  # Proxmox cloud-init tweaks
-  provisioner "file" {
-    source      = "files/99-pve.cfg"
-    destination = "/tmp/99-pve.cfg"
-  }
-
-  # User stack + provision script
-  provisioner "file" {
-    source      = "files/userstack/"
-    destination = "/tmp/capstone-userstack"
-  }
-
-  provisioner "file" {
-    source      = "scripts/"
-    destination = "/tmp/scripts"
-  }
-
-  provisioner "shell" {
-    environment_vars = [
-      "PACKER_SSH_PUBLIC_KEY=${var.ssh_public_key}",
-    ]
-    inline = [
-      "echo 'kali' | sudo -S cp /tmp/99-pve.cfg /etc/cloud/cloud.cfg.d/99-pve.cfg",
-      "echo 'kali' | sudo -S bash /tmp/scripts/provision-kali-userstack.sh",
-    ]
-  }
 }

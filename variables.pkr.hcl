@@ -3,23 +3,19 @@
 
 variable "proxmox_url" {
   type = string
-  default = env("PROXMOX_URL")
 }
 
 variable "proxmox_username" {
   type = string
-  default = env("PROXMOX_USERNAME")
 }
 
 variable "proxmox_token" {
   type      = string
   sensitive = true
-  default = env("PROXMOX_TOKEN")
 }
 
 variable "proxmox_node" {
   type = string
-  default = env("PROXMOX_NODE")
 }
 
 variable "proxmox_skip_tls_verify" {

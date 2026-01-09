@@ -22,14 +22,15 @@ source "proxmox-iso" "kali-xfce" {
   template_description = var.template_description
   os                   = "l26"
 
-boot_iso {
-  type = "ide"
+  boot_iso {
+    type = "ide"
 
-  iso_url          = var.kali_iso_url
-  iso_checksum     = var.kali_iso_checksum
-  iso_storage_pool = var.iso_storage
-  unmount          = true
-}
+    iso_url          = var.kali_iso_url
+    iso_checksum     = var.kali_iso_checksum
+    iso_storage_pool = var.iso_storage
+    unmount          = true
+  }
+
   # Guest
   qemu_agent      = true
   scsi_controller = "virtio-scsi-pci"

@@ -21,12 +21,6 @@ build {
   }
 
   provisioner "shell" {
-    environment_vars = [
-      "PACKER_SSH_PUBLIC_KEY=${var.ssh_public_key}",
-    ]
-    inline = [
-      "echo 'kali' | sudo -S cp /tmp/99-pve.cfg /etc/cloud/cloud.cfg.d/99-pve.cfg",
-      "echo 'kali' | sudo -S bash /tmp/scripts/provision-kali-userstack.sh",
-    ]
+    inline = [ "sudo cp /tmp/99-pve.cfg /etc/cloud/cloud.cfg.d/99-pve.cfg" ]
   }
 }

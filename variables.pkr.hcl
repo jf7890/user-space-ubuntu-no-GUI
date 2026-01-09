@@ -3,19 +3,23 @@
 
 variable "proxmox_url" {
   type = string
+  default = env("PROXMOX_URL")
 }
 
 variable "proxmox_username" {
   type = string
+  default = env("PROXMOX_USERNAME")
 }
 
 variable "proxmox_token" {
   type      = string
   sensitive = true
+  default = env("PROXMOX_TOKEN")
 }
 
 variable "proxmox_node" {
   type = string
+  default = env("PROXMOX_NODE")
 }
 
 variable "proxmox_skip_tls_verify" {
@@ -37,10 +41,12 @@ variable "proxmox_storage" {
 
 variable "bridge_wan" {
   type = string
+  default = env("PACKER_BRIDGE_WAN")
 }
 
 variable "bridge_lan" {
   type = string
+  default = env("PACKER_BRIDGE_LAN")
 }
 
 variable "lan_vlan_tag" {
@@ -50,12 +56,12 @@ variable "lan_vlan_tag" {
 
 variable "ssh_public_key" {
   type    = string
-  default = ""
+  default = env("PACKER_SSH_PUBLIC_KEY")
 }
 
 variable "ssh_private_key_file" {
   type    = string
-  default = ""
+  default = env("PACKER_SSH_PRIVATE_KEY")
 }
 
 variable "template_vm_id" {

@@ -65,16 +65,20 @@ source "proxmox-iso" "kali-xfce" {
   cloud_init              = true
   cloud_init_storage_pool = var.proxmox_storage
 
-  # Unattended install via preseed
-  boot_command = [
-    "<esc><wait>",
-    "<esc><wait>",
-    "<esc><wait>",
-    "install preseed/url=http://{{ .HTTPIP }}:{{ .HTTPPort }}/cloud.cfg debian-installer=en_US auto locale=en_US kbd-chooser/method=us <wait>",
-    "netcfg/get_hostname=kali netcfg/get_domain=local fb=false debconf/frontend=noninteractive console-setup/ask_detect=false <wait>",
-    "console-keymaps-at/keymap=us keyboard-configuration/xkb-keymap=us <wait>",
-    "<enter><wait>"
-  ]
+boot_command = [
+  "<esc><wait>",
+  "<esc><wait>",
+  "<esc><wait>",
+
+  "install auto=true priority=critical desktop=xfce debconf/frontend=noninteractive " ,
+  "preseed/url=http://{{ .HTTPIP }}:{{ .HTTPPort }}/cloud.cfg " ,
+  "debian-installer/locale=en_US.UTF-8 locale=en_US.UTF-8 " ,
+  "keyboard-configuration/xkb-keymap=us console-keymaps-at/keymap=us " ,
+  "netcfg/choose_interface=auto netcfg/get_hostname=kali netcfg/get_domain=local " ,
+  "fb=false console-setup/ask_detect=false <wait>",
+
+  "<enter><wait>"
+]
   boot      = "c"
   boot_wait = "5s"
 

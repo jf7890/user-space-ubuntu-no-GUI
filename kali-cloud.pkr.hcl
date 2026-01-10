@@ -51,12 +51,6 @@ source "proxmox-iso" "kali-xfce" {
 
   network_adapters {
     model    = "virtio"
-    bridge   = var.bridge_wan
-    firewall = false
-  }
-
-  network_adapters {
-    model    = "virtio"
     bridge   = var.bridge_lan
     firewall = false
     vlan_tag = var.lan_vlan_tag

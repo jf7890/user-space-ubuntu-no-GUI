@@ -23,6 +23,12 @@ build {
     source      = "scripts/"
     destination = "/tmp/scripts"
   }
+  provisioner "shell" {
+    inline = [
+      "sudo chmod +x /tmp/scripts/provision-kali-userstack.sh",
+      "cd /tmp/scripts && sudo -E bash ./provision-kali-userstack.sh"
+    ]
+  }
 
   provisioner "shell" {
     inline = ["sudo cp /tmp/99-pve.cfg /etc/cloud/cloud.cfg.d/99-pve.cfg"]

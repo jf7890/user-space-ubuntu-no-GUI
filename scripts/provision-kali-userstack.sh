@@ -1,12 +1,18 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# This script is intended to run as root (packer runs it via sudo).
+# This script is intended to run as root (Packer should run it via sudo/root SSH).
+# Comments are English-only by request.
+
+export DEBIAN_FRONTEND=noninteractive
+
+# Re-run as root if needed (e.g., SSH user is "kali")
+if [[ "${EUID:-$(id -u)}" -ne 0 ]]; then
+  exec sudo -n -E bash "$0" "$@"
+fi
 
 USERSTACK_SRC="/tmp/capstone-userstack"
 USERSTACK_DST="/opt/capstone-userstack"
-
-export DEBIAN_FRONTEND=noninteractive
 
 echo "[1/8] Apt update + base packages"
 apt-get update -y
@@ -16,8 +22,12 @@ apt-get install -y --no-install-recommends \
   docker.io docker-compose-plugin \
   unzip
 
-systemctl enable --now qemu-guest-agent || true
-systemctl enable --now docker
+# Start services in a non-blocking way to avoid long-running SSH sessions.
+systemctl enable qemu-guest-agent > /dev/null 2>&1 || true
+systemctl start --no-block qemu-guest-agent > /dev/null 2>&1 || true
+
+systemctl enable docker > /dev/null 2>&1 || true
+systemctl start --no-block docker > /dev/null 2>&1 || true
 
 # Allow 'kali' user to run docker without sudo (if the user exists)
 if id kali >/dev/null 2>&1; then
@@ -25,8 +35,8 @@ if id kali >/dev/null 2>&1; then
 fi
 
 echo "[2/8] Install Wazuh agent (optional; does not start until manager is set)"
-# Wazuh provides Debian/Ubuntu repo that works for Kali (Debian-based).
-# If your environment blocks external downloads, you can comment this section.
+# Wazuh provides a Debian/Ubuntu repo that also works for Kali (Debian-based).
+# If external downloads are blocked, you can comment out this entire section.
 if ! dpkg -s wazuh-agent >/dev/null 2>&1; then
   curl -fsSL https://packages.wazuh.com/key/GPG-KEY-WAZUH | gpg --dearmor -o /usr/share/keyrings/wazuh.gpg
   echo "deb [signed-by=/usr/share/keyrings/wazuh.gpg] https://packages.wazuh.com/4.x/apt/ stable main" > /etc/apt/sources.list.d/wazuh.list
@@ -34,23 +44,23 @@ if ! dpkg -s wazuh-agent >/dev/null 2>&1; then
   apt-get install -y wazuh-agent
 fi
 
-# Placeholders: we keep the agent disabled by default (manager IP to be set later)
+# Keep the agent disabled by default; the manager address will be configured later.
 WAZUH_CONF="/var/ossec/etc/ossec.conf"
 if [[ -f "$WAZUH_CONF" ]]; then
-  # Make sure we have a deterministic placeholder address
+  # Set a deterministic placeholder address
   sed -i 's|<address>[^<]*</address>|<address>__WAZUH_MANAGER__</address>|' "$WAZUH_CONF" || true
 
-  # Add logcollector entries once
+  # Add logcollector entries only once
   if ! grep -q "CAPSTONE_USERSTACK_LOGS" "$WAZUH_CONF"; then
     # Insert before closing tag
-    perl -0777 -i -pe 's#</ossec_config>#  <!-- CAPSTONE_USERSTACK_LOGS -->\n  <localfile>\n    <log_format>syslog</log_format>\n    <location>/opt/capstone-userstack/logs/nginx/access.log</location>\n  </localfile>\n  <localfile>\n    <log_format>syslog</log_format>\n    <location>/opt/capstone-userstack/logs/nginx/error.log</location>\n  </localfile>\n  <localfile>\n    <log_format>json</log_format>\n    <location>/opt/capstone-userstack/logs/modsecurity/modsec_audit.log</location>\n  </localfile>\n  <localfile>\n    <log_format>syslog</log_format>\n    <location>/opt/capstone-userstack/logs/apache/access.log</location>\n  </localfile>\n  <localfile>\n    <log_format>syslog</log_format>\n    <location>/opt/capstone-userstack/logs/apache/error.log</location>\n  </localfile>\n  <localfile>\n    <log_format>syslog</log_format>\n    <location>/opt/capstone-userstack/logs/mysql/error.log</location>\n  </localfile>\n  <localfile>\n    <log_format>syslog</log_format>\n    <location>/opt/capstone-userstack/logs/postgres/postgresql.log</location>\n  </localfile>\n</ossec_config>#s' "$WAZUH_CONF"
+    perl -0777 -i -pe 's#</ossec_config>#  <!-- CAPSTONE_USERSTACK_LOGS -->\n  <localfile>\n    <log_format>syslog</log_format>\n    <location>/opt/capstone-userstack/logs/nginx/access.log</location>\n  </localfile>\n  <localfile>\n    <log_format>syslog</log_format>\n    <location>/opt/capstone-userstack/logs/nginx/error.log</location>\n  </localfile>\n  <localfile>\n    <log_format>json</log_format>\n    <location>/opt/capstone-userstack/logs/modsecurity/modsec_audit.log</location>\n  </localfile>\n  <localfile>\n    <log_format>syslog</log_format>\n    <location>/opt/capstone-userstack/logs/apache/access.log</location>\n  </localfile>\n  <localfile>\n    <log_format>syslog</log_format>\n    <location>/opt/capstone-userstack/logs/apache/error.log</location>\n  </localfile>\n  <localfile>\n    <log_format>syslog</log_format>\n    <location>/opt/capstone-userstack/logs/mysql/error.log</location>\n  </localfile>\n  <localfile>\n    <log_format>syslog</log_format>\n    <location>/opt/capstone-userstack/logs/postgres/postgresql.log</location>\n  </localfile>\n</ossec_config>#s' "$WAZUH_CONF" || true
   fi
 fi
 
-systemctl stop wazuh-agent || true
-systemctl disable wazuh-agent || true
+systemctl stop wazuh-agent > /dev/null 2>&1 || true
+systemctl disable wazuh-agent > /dev/null 2>&1 || true
 
-echo "[3/8] Helper: set Wazuh manager IP later"
+echo "[3/8] Helper: set Wazuh manager address later"
 cat > /usr/local/bin/wazuh-set-manager <<'EOF'
 #!/usr/bin/env bash
 set -euo pipefail
@@ -64,10 +74,17 @@ if [[ ! -f "$conf" ]]; then
   echo "Cannot find $conf" >&2
   exit 1
 fi
-sed -i "s|<address>__WAZUH_MANAGER__</address>|<address>${mgr}</address>|" "$conf"
-systemctl enable --now wazuh-agent
-systemctl restart wazuh-agent
-systemctl status wazuh-agent --no-pager
+
+# Replace the placeholder with the provided manager address
+sed -i "s|<address>__WAZUH_MANAGER__</address>|<address>${mgr}</address>|" "$conf" || true
+
+# Enable and start the agent without blocking the current SSH session
+systemctl enable wazuh-agent > /dev/null 2>&1 || true
+systemctl start --no-block wazuh-agent > /dev/null 2>&1 || true
+systemctl restart wazuh-agent > /dev/null 2>&1 || true
+
+# Best-effort status output without a pager
+systemctl status wazuh-agent --no-pager > /dev/null 2>&1 || true
 EOF
 chmod +x /usr/local/bin/wazuh-set-manager
 
@@ -76,7 +93,7 @@ rm -rf "$USERSTACK_DST"
 mkdir -p "$USERSTACK_DST"
 cp -a "$USERSTACK_SRC"/* "$USERSTACK_DST"/
 
-# Ensure logs dirs exist
+# Ensure log directories exist
 mkdir -p \
   "$USERSTACK_DST/logs/nginx" \
   "$USERSTACK_DST/logs/modsecurity" \
@@ -90,7 +107,7 @@ if [[ -f "$USERSTACK_DST/.env.example" && ! -f "$USERSTACK_DST/.env" ]]; then
   cp "$USERSTACK_DST/.env.example" "$USERSTACK_DST/.env"
 fi
 
-chmod +x "$USERSTACK_DST/scripts"/*.sh || true
+chmod +x "$USERSTACK_DST/scripts"/*.sh 2>/dev/null || true
 
 echo "[5/8] Create systemd service: capstone-userstack"
 cat > /etc/systemd/system/capstone-userstack.service <<'EOF'
@@ -111,32 +128,52 @@ TimeoutStartSec=0
 WantedBy=multi-user.target
 EOF
 
-systemctl daemon-reload
-systemctl enable capstone-userstack.service
+systemctl daemon-reload > /dev/null 2>&1 || true
+systemctl enable capstone-userstack.service > /dev/null 2>&1 || true
 
 echo "[6/8] Pre-pull/build docker images (best-effort)"
 # Avoid failing the whole template build if a registry is down.
 (
   cd "$USERSTACK_DST"
   docker compose pull || true
-  # frontend/bootstrap are built locally
   docker compose build --pull || true
 ) || true
 
 # Do not start the lab automatically during the template build
-systemctl stop capstone-userstack.service || true
+systemctl stop capstone-userstack.service > /dev/null 2>&1 || true
 
-echo "[7/8] Optional: inject SSH public key for the 'kali' user"
-if [[ -n "${PACKER_SSH_PUBLIC_KEY:-}" && -d /home/kali ]]; then
-  install -d -m 0700 -o kali -g kali /home/kali/.ssh
-  echo "$PACKER_SSH_PUBLIC_KEY" > /home/kali/.ssh/authorized_keys
-  chown kali:kali /home/kali/.ssh/authorized_keys
-  chmod 0600 /home/kali/.ssh/authorized_keys
-fi
+echo "[7/8] Cleanup temporary build artifacts"
+rm -rf /tmp/capstone-userstack /tmp/scripts >/dev/null 2>&1 || true
+apt-get autoremove -y >/dev/null 2>&1 || true
+apt-get clean >/dev/null 2>&1 || true
 
-echo "[8/8] Cleanup"
-rm -rf /tmp/capstone-userstack /tmp/scripts || true
-apt-get autoremove -y || true
-apt-get clean
+echo "[8/8] Template cleanup (logs/keys/identity)"
 
-echo "DONE: Template has docker + userstack + wazuh-agent (disabled until manager set)."
+# Remove build-time SSH keys (template should not ship with provisioning keys)
+rm -f /root/.ssh/authorized_keys 2>/dev/null || true
+rm -f /home/kali/.ssh/authorized_keys 2>/dev/null || true
+
+# NOTE: Only enable these if clones will receive SSH keys via Cloud-Init/Proxmox.
+# passwd -l root >/dev/null 2>&1 || true
+# passwd -l kali >/dev/null 2>&1 || true
+
+# Reset SSH host keys so clones regenerate unique keys on first boot
+rm -f /etc/ssh/ssh_host_* 2>/dev/null || true
+
+# Reset machine-id to avoid duplicate identities across clones
+truncate -s 0 /etc/machine-id 2>/dev/null || true
+rm -f /var/lib/dbus/machine-id 2>/dev/null || true
+
+# Clear logs to reduce template size and remove build traces
+find /var/log -type f -exec truncate -s 0 {} \; 2>/dev/null || true
+
+# Clean shell history
+rm -f /root/.bash_history 2>/dev/null || true
+rm -f /home/kali/.bash_history 2>/dev/null || true
+
+# Remove apt lists (optional; reduces template size)
+rm -rf /var/lib/apt/lists/* 2>/dev/null || true
+
+sync || true
+
+echo "DONE: Template has docker + userstack + wazuh-agent (disabled until manager is set)." 

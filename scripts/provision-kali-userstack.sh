@@ -15,12 +15,17 @@ USERSTACK_SRC="/tmp/capstone-userstack"
 USERSTACK_DST="/opt/capstone-userstack"
 
 echo "[1/8] Apt update + base packages"
-apt-get update -y
 apt-get install -y --no-install-recommends \
   ca-certificates curl gnupg lsb-release jq \
   qemu-guest-agent \
-  docker.io docker-compose-plugin \
+  docker.io \
   unzip
+
+if apt-cache show docker-compose-plugin >/dev/null 2>&1; then
+  apt-get install -y docker-compose-plugin
+else
+  apt-get install -y docker-compose
+fi
 
 # Start services in a non-blocking way to avoid long-running SSH sessions.
 systemctl enable qemu-guest-agent > /dev/null 2>&1 || true

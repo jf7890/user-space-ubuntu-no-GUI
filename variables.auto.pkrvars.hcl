@@ -10,7 +10,7 @@ iso_storage     = "hdd-data"
 vm_storage      = "local-lvm"
 proxmox_storage = "local-lvm"
 
-template_vm_id       = 9002
+template_vm_id       = 0
 template_name        = "tpl-kali-xfce"
 template_description = "Kali XFCE (Capstone)"
 

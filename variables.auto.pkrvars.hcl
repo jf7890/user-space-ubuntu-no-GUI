@@ -6,7 +6,6 @@ proxmox_token           = "28786dd2-1eed-44e6-b8a4-dc2221ce384d"
 proxmox_node            = "homelab"
 proxmox_skip_tls_verify = true
 
-iso_storage     = "hdd-data"
 vm_storage      = "local-lvm"
 proxmox_storage = "local-lvm"
 

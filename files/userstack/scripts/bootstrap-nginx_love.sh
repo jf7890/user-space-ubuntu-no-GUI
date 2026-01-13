@@ -4,19 +4,29 @@ set -Eeuo pipefail
 # ==============================
 # Configuration
 # ==============================
-API_BASE="${API_BASE:-http://localhost:3001/api}"
+API_BASE="${API_BASE:-}"
+API_URL="${API_URL:-}"
+if [[ -z "$API_BASE" && -n "$API_URL" ]]; then
+  API_BASE="${API_URL%/}"
+  if [[ "$API_BASE" != */api ]]; then
+    API_BASE="${API_BASE}/api"
+  fi
+fi
+API_BASE="${API_BASE:-http://localhost:5044/api}"
 
 ADMIN_USERNAME="${ADMIN_USERNAME:-admin}"
-ADMIN_PASSWORD="${ADMIN_PASSWORD:-}"
+ADMIN_PASSWORD="${ADMIN_PASSWORD:-${NGINXLOVE_ADMIN_PASSWORD:-}}"
 
-NEW_ADMIN_PASSWORD="${NEW_ADMIN_PASSWORD:-}"
+NEW_ADMIN_PASSWORD="${NEW_ADMIN_PASSWORD:-${NGINXLOVE_NEW_ADMIN_PASSWORD:-}}"
 TOTP_CODE="${TOTP_CODE:-}"
 
-PROXY_CONTAINER="${PROXY_CONTAINER:-blueteam_stack-nginx-1}"
-JUICESHOP_CONTAINER="${JUICESHOP_CONTAINER:-juice-shop}"
+PROXY_CONTAINER="${PROXY_CONTAINER:-nginx-love-backend}"
+JUICESHOP_CONTAINER="${JUICESHOP_CONTAINER:-juiceshop}"
 DVWA_CONTAINER="${DVWA_CONTAINER:-dvwa}"
 
 AUTO_CONNECT_NETWORK="${AUTO_CONNECT_NETWORK:-true}"
+WAIT_FOR_API_SECONDS="${WAIT_FOR_API_SECONDS:-180}"
+WAIT_FOR_API_INTERVAL="${WAIT_FOR_API_INTERVAL:-5}"
 
 log() { echo "[*] $*" >&2; }
 die() { echo "[!]" "$*" >&2; exit 1; }
@@ -123,6 +133,30 @@ curl_json() {
   fi
 
   printf '%s' "$out"
+}
+
+# ==============================
+# Readiness helpers
+# ==============================
+wait_for_api() {
+  local url="${API_BASE%/}/health"
+  local deadline=$((SECONDS + WAIT_FOR_API_SECONDS))
+
+  while true; do
+    local code
+    code="$(curl -sS -o /dev/null -w "%{http_code}" "$url" || true)"
+    if [[ -n "$code" && "$code" != "000" ]]; then
+      log "API reachable at $url (HTTP $code)."
+      return 0
+    fi
+
+    if (( SECONDS >= deadline )); then
+      log "Timed out waiting for API at $url."
+      return 1
+    fi
+
+    sleep "$WAIT_FOR_API_INTERVAL"
+  done
 }
 
 # ==============================
@@ -320,6 +354,11 @@ main() {
   [[ -n "${ADMIN_PASSWORD:-}" ]] || die "ADMIN_PASSWORD is required (set it in .env or environment)."
   if [[ -z "${NEW_ADMIN_PASSWORD:-}" ]]; then
     NEW_ADMIN_PASSWORD="$ADMIN_PASSWORD"
+  fi
+
+  if [[ "$WAIT_FOR_API_SECONDS" -gt 0 ]]; then
+    log "Waiting for API to become reachable..."
+    wait_for_api || die "API did not become reachable in time."
   fi
 
   log "=== Step 0: Resolve upstream IPs (from container names) ==="

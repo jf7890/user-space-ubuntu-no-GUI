@@ -13,6 +13,7 @@ fi
 
 USERSTACK_SRC="/tmp/capstone-userstack"
 USERSTACK_DST="/opt/capstone-userstack"
+WAZUH_MANAGER="${WAZUH_MANAGER:-172.16.99.11}"
 
 echo "[1/8] Apt update + base packages"
 apt-get update -y
@@ -123,6 +124,26 @@ systemctl restart wazuh-agent > /dev/null 2>&1 || true
 systemctl status wazuh-agent --no-pager > /dev/null 2>&1 || true
 EOF
 chmod +x /usr/local/bin/wazuh-set-manager
+
+if [[ -n "$WAZUH_MANAGER" ]]; then
+  cat > /etc/systemd/system/capstone-wazuh-manager.service <<EOF
+[Unit]
+Description=Configure Wazuh agent manager
+Wants=network-online.target
+After=network-online.target
+ConditionPathExists=/var/ossec/etc/ossec.conf
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/wazuh-set-manager ${WAZUH_MANAGER}
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target
+EOF
+  systemctl daemon-reload > /dev/null 2>&1 || true
+  systemctl enable capstone-wazuh-manager.service > /dev/null 2>&1 || true
+fi
 
 echo "[4/8] Install capstone userstack files"
 rm -rf "$USERSTACK_DST"

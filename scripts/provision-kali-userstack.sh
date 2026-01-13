@@ -74,7 +74,7 @@ TimeoutStartSec=0
 
 [Install]
 WantedBy=multi-user.target
-  EOF
+EOF
 
   systemctl daemon-reload > /dev/null 2>&1 || true
   if [[ ! -f /var/lib/capstone-userstack/provisioned ]]; then

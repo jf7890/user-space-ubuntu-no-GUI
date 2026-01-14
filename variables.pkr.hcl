@@ -29,11 +29,6 @@ variable "iso_storage" {
   default = env("PACKER_ISO_STORAGE")
 }
 
-variable "kali_iso_file" {
-  type    = string
-  default = ""
-}
-
 variable "vm_storage" {
   type = string
 }
@@ -95,11 +90,11 @@ variable "disk_size" {
   default = "30G"
 }
 
-variable "kali_iso_url" {
+variable "iso_url" {
   type = string
 }
 
-variable "kali_iso_checksum" {
+variable "iso_checksum" {
   type    = string
   default = "none"
 }

@@ -89,7 +89,7 @@ services:
   nginx-love-frontend:
     build:
       context: ./nginx-love
-      dockerfile: Dockerfile.frontend
+      dockerfile: docker/Dockerfile.frontend
     container_name: nginx-love-frontend
     depends_on:
       - nginx-love-backend
@@ -102,18 +102,22 @@ services:
   nginx-love-bootstrap:
     build:
       context: ./nginx-love
-      dockerfile: Dockerfile.bootstrap
+      dockerfile: docker/Dockerfile.bootstrap
     container_name: nginx-love-bootstrap
     depends_on:
       - nginx-love-backend
       - dvwa
       - juiceshop
     environment:
-      - API_URL=http://nginx-love-backend:5044
+      - API_BASE=http://nginx-love-backend:5044/api
       - ADMIN_PASSWORD=${NGINXLOVE_ADMIN_PASSWORD:-admin}
       - NEW_ADMIN_PASSWORD=${NGINXLOVE_NEW_ADMIN_PASSWORD:-admin}
+      - PROXY_CONTAINER=nginx-love-backend
+      - JUICESHOP_CONTAINER=juiceshop
+      - DVWA_CONTAINER=dvwa
     volumes:
       - nginx_love_bootstrap_state:/state
+      - /var/run/docker.sock:/var/run/docker.sock
       - ./scripts/bootstrap-nginx_love.sh:/bootstrap-nginx_love.sh:ro
     command: ["/bin/sh", "-c", "chmod +x /bootstrap-nginx_love.sh && /bootstrap-nginx_love.sh"]
     restart: "no"

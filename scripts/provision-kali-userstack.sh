@@ -20,7 +20,7 @@ echo "[2/9] Install Cloud-init, VNC & Docker"
 # Cài thêm các gói thiếu vì không cài trong Preseed
 apt-get install -y --no-install-recommends \
   ca-certificates curl gnupg jq unzip \
-  cloud-init tigervnc-standalone-server tigervnc-common dbus-x11 \
+  cloud-init tigervnc-standalone-server tigervnc-common tigervnc-tools dbus-x11 \
   kali-tools-web
 
 # Docker CE theo hướng dẫn chính thức (Debian/Kali)
@@ -57,29 +57,29 @@ if id kali >/dev/null 2>&1; then
 fi
 
 echo "[3/9] Configure VNC (XFCE)"
-# Thiết lập thư mục và password VNC cho user kali
-mkdir -p /home/kali/.vnc
-chown kali:kali /home/kali/.vnc
-chmod 700 /home/kali/.vnc
+if ! id kali >/dev/null 2>&1; then
+  echo "Skipping VNC setup (user kali not found)"
+elif ! command -v vncpasswd >/dev/null 2>&1 || ! command -v vncserver >/dev/null 2>&1; then
+  echo "Skipping VNC setup (tigervnc not installed)"
+else
+  VNC_PASSWORD="${VNC_PASSWORD:-kali1234}"
+  install -d -m 0700 -o kali -g kali /home/kali/.vnc
 
-# Tạo file xstartup để chạy XFCE
-cat > /home/kali/.vnc/xstartup <<EOF
+  cat > /home/kali/.vnc/xstartup <<'EOF'
 #!/bin/sh
 unset SESSION_MANAGER
 unset DBUS_SESSION_BUS_ADDRESS
 export SHELL=/bin/bash
 startxfce4 &
 EOF
-chmod 755 /home/kali/.vnc/xstartup
-chown kali:kali /home/kali/.vnc/xstartup
+  chown kali:kali /home/kali/.vnc/xstartup
+  chmod 755 /home/kali/.vnc/xstartup
 
-# Set password VNC là 'kali1234'
-su - kali -c "printf \"kali1234\n\" | vncpasswd -f > ~/.vnc/passwd"
-chmod 600 /home/kali/.vnc/passwd
-chown kali:kali /home/kali/.vnc/passwd
+  su - kali -c "printf '%s\n' \"${VNC_PASSWORD}\" | vncpasswd -f > ~/.vnc/passwd"
+  chmod 600 /home/kali/.vnc/passwd
+  chown kali:kali /home/kali/.vnc/passwd
 
-# Tạo Systemd service cho VNC
-cat > /etc/systemd/system/vncserver@.service <<EOF
+  cat > /etc/systemd/system/vncserver@.service <<'EOF'
 [Unit]
 Description=TigerVNC Server on display :%i
 After=network.target
@@ -97,8 +97,9 @@ ExecStop=/usr/bin/vncserver -kill :%i
 WantedBy=multi-user.target
 EOF
 
-systemctl daemon-reload
-systemctl enable vncserver@1.service
+  systemctl daemon-reload
+  systemctl enable vncserver@1.service
+fi
 
 echo "[4/9] Install Wazuh agent"
 if ! dpkg -s wazuh-agent >/dev/null 2>&1; then
@@ -208,3 +209,4 @@ rm -rf /tmp/capstone-userstack /tmp/scripts || true
 apt-get autoremove -y || true
 apt-get clean
 rm -rf /var/lib/apt/lists/* || true
+

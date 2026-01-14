@@ -13,22 +13,22 @@ source "proxmox-iso" "kali-xfce" {
   proxmox_url              = var.proxmox_url
   username                 = var.proxmox_username
   token                    = var.proxmox_token
-  insecure_skip_tls_verify = true
+  insecure_skip_tls_verify = var.proxmox_skip_tls_verify
   node                     = var.proxmox_node
 
   task_timeout = var.task_timeout
 
   # VM general
-  vm_id                = 0
-  vm_name              = "tpl-kali-xfce"
-  template_description = "Kali XFCE (Capstone)"
+  vm_id                = var.template_vm_id
+  vm_name              = var.template_name
+  template_description = var.template_description
   os                   = "l26"
 
   boot_iso {
     type = "scsi"
 
-    iso_url          = "https://kali.download/base-images/current/kali-linux-2025.4-installer-amd64.iso"
-    iso_checksum     = "sha256:3b4a3a9f5fb6532635800d3eda94414fb69a44165af6db6fa39c0bdae750c266"
+    iso_url          = var.kali_iso_url
+    iso_checksum     = var.kali_iso_checksum
     iso_storage_pool = var.iso_storage
     iso_download_pve = true
     unmount          = true
@@ -39,21 +39,21 @@ source "proxmox-iso" "kali-xfce" {
   scsi_controller = "virtio-scsi-pci"
 
   disks {
-    disk_size    = "50G"
+    disk_size    = var.disk_size
     format       = "raw"
-    storage_pool = "local-lvm"
+    storage_pool = var.vm_storage
     type         = "virtio"
   }
 
-  cores              = 4
-  memory             = 6144
-  ballooning_minimum = 2048
+  cores              = var.cores
+  memory             = var.memory
+  ballooning_minimum = var.ballooning_minimum
 
   network_adapters {
     model    = "virtio"
     bridge   = var.bridge_lan
     firewall = false
-    vlan_tag = 10
+    vlan_tag = var.lan_vlan_tag
   }
 
   vga {
@@ -63,7 +63,7 @@ source "proxmox-iso" "kali-xfce" {
 
   # Cloud-init drive (so clones can use cloud-init if you want)
   cloud_init              = true
-  cloud_init_storage_pool = "local-lvm"
+  cloud_init_storage_pool = var.proxmox_storage
 
   boot_command = [
     "<esc><wait>",

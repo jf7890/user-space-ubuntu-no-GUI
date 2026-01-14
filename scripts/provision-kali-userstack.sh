@@ -25,7 +25,6 @@ apt-get install -y --no-install-recommends \
   sqlmap \
   nikto
 
-# Ensure kali login password is set and account is unlocked
 echo "[2.1/11] Ensure kali login password"
 if id kali >/dev/null 2>&1; then
   echo "kali:kali" | chpasswd

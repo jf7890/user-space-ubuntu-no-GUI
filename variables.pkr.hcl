@@ -39,7 +39,7 @@ variable "proxmox_storage" {
 
 variable "bridge_lan" {
   type    = string
-  default = env("PACKER_BRIDGE_LAN") != "" ? env("BRIDGE_LAN") : env("PACKER_BRIDGE_LAN")
+  default = env("PACKER_BRIDGE_LAN")
 }
 
 variable "lan_vlan_tag" {

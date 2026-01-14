@@ -25,6 +25,21 @@ apt-get install -y --no-install-recommends \
   sqlmap \
   nikto
 
+# Docker CE (official)
+DOCKER_CODENAME="$(. /etc/os-release && echo "${VERSION_CODENAME}")"
+if [[ "$DOCKER_CODENAME" == "kali-rolling" ]]; then
+  DOCKER_CODENAME="bookworm"
+fi
+
+apt-get remove -y docker.io docker-doc docker-compose podman-docker containerd runc || true
+install -m 0755 -d /etc/apt/keyrings
+curl -fsSL https://download.docker.com/linux/debian/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+chmod a+r /etc/apt/keyrings/docker.gpg
+echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/debian ${DOCKER_CODENAME} stable" > /etc/apt/sources.list.d/docker.list
+apt-get update -y
+apt-get install -y --no-install-recommends \
+  docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+
 # Enable cloud-init units that exist
 for svc in cloud-init-local.service cloud-init.service cloud-config.service cloud-final.service; do
   if systemctl list-unit-files "$svc" --no-legend 2>/dev/null | awk '{print $1}' | grep -qx "$svc"; then

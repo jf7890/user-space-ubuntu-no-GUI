@@ -25,6 +25,15 @@ apt-get install -y --no-install-recommends \
   sqlmap \
   nikto
 
+# Ensure kali login password is set and account is unlocked
+echo "[2.1/11] Ensure kali login password"
+if id kali >/dev/null 2>&1; then
+  echo "kali:kali" | chpasswd
+  passwd -u kali || true
+else
+  echo "Skipping password reset (user kali not found)"
+fi
+
 # Docker CE (official)
 DOCKER_CODENAME="$(. /etc/os-release && echo "${VERSION_CODENAME}")"
 if [[ "$DOCKER_CODENAME" == "kali-rolling" ]]; then

@@ -1,4 +1,0 @@
-iso_storage     = "hdd-data"
-
-lan_vlan_tag = 1
-task_timeout = "2h"

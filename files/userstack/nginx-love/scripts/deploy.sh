@@ -120,18 +120,45 @@ fi
 
 # Check Docker
 if ! command -v docker &> /dev/null; then
-    error "Docker not found. Please install Docker before running this script."
+    warn "Docker not found. Installing latest Docker..."
+    curl -fsSL https://get.docker.com -o /tmp/install-docker.sh >> "$LOG_FILE" 2>&1 || error "Failed to download Docker installer"
+    sh /tmp/install-docker.sh >> "$LOG_FILE" 2>&1 || error "Failed to install Docker"
+    rm -f /tmp/install-docker.sh
+    
+    # Start Docker service
+    systemctl start docker >> "$LOG_FILE" 2>&1
+    systemctl enable docker >> "$LOG_FILE" 2>&1
+    
+    log "✓ Docker $(docker -v | cut -d',' -f1 | cut -d' ' -f3) installed successfully"
 else
-    log "OK Docker $(docker -v | cut -d',' -f1 | cut -d' ' -f3) detected"
+    log "✓ Docker $(docker -v | cut -d',' -f1 | cut -d' ' -f3) detected"
 fi
 
-# Check Docker Compose (optional)
-if command -v docker-compose &> /dev/null; then
-    log "OK Docker Compose $(docker-compose -v | cut -d' ' -f4 | tr -d ',') detected"
-elif docker compose version >/dev/null 2>&1; then
-    log "OK Docker Compose plugin detected"
+# Check Docker Compose
+if ! command -v docker-compose &> /dev/null; then
+    warn "Docker Compose not found. Installing latest version..."
+    
+    # Get latest docker compose released tag
+    COMPOSE_VERSION=$(curl -s https://api.github.com/repos/docker/compose/releases/latest | grep 'tag_name' | cut -d\" -f4)
+    
+    if [ -z "$COMPOSE_VERSION" ]; then
+        warn "Failed to get latest version, using v2.24.0"
+        COMPOSE_VERSION="v2.24.0"
+    fi
+    
+    # Install docker-compose
+    curl -L "https://github.com/docker/compose/releases/download/${COMPOSE_VERSION}/docker-compose-$(uname -s)-$(uname -m)" \
+        -o /usr/local/bin/docker-compose >> "$LOG_FILE" 2>&1 || error "Failed to download Docker Compose"
+    
+    chmod +x /usr/local/bin/docker-compose
+    
+    # Install bash completion
+    curl -L "https://raw.githubusercontent.com/docker/compose/${COMPOSE_VERSION}/contrib/completion/bash/docker-compose" \
+        -o /etc/bash_completion.d/docker-compose 2>/dev/null || true
+    
+    log "✓ Docker Compose $(docker-compose -v | cut -d' ' -f4 | tr -d ',') installed successfully"
 else
-    warn "Docker Compose not found (not required for this script)"
+    log "✓ Docker Compose $(docker-compose -v | cut -d' ' -f4 | tr -d ',') detected"
 fi
 
 # Use pnpm for monorepo

@@ -6,8 +6,6 @@ SERVICE_NAME="capstone-userstack.service"
 UNIT_PATH="/etc/systemd/system/${SERVICE_NAME}"
 ENV_FILE="${STACK_DIR}/.env"
 ENV_EXAMPLE="${STACK_DIR}/.env.example"
-CERT_COMPOSE_FILE="${STACK_DIR}/generate-indexer-certs.yml"
-CERT_SCRIPT=""
 
 if [[ "${EUID}" -ne 0 ]]; then
   echo "This script must be run as root" >&2
@@ -57,31 +55,6 @@ if [[ -n "${PRIMARY_IP}" && -f "${ENV_FILE}" ]]; then
   else
     echo "${VITE_API_URL_VALUE}" >> "${ENV_FILE}"
   fi
-fi
-
-for candidate in \
-  "${STACK_DIR}/scripts/generate-indexer-certs.sh" \
-  "${STACK_DIR}/scripts/generate-certs.sh" \
-  "${STACK_DIR}/gen"; do
-  if [[ -f "${candidate}" ]]; then
-    CERT_SCRIPT="${candidate}"
-    break
-  fi
-done
-
-if [[ -n "${CERT_SCRIPT}" ]]; then
-  sed -i 's/\r$//' "${CERT_SCRIPT}"
-  (
-    cd "${STACK_DIR}"
-    bash "${CERT_SCRIPT}"
-  )
-elif [[ -f "${CERT_COMPOSE_FILE}" ]]; then
-  (
-    cd "${STACK_DIR}"
-    docker compose -f "$(basename "${CERT_COMPOSE_FILE}")" run --rm generator
-  )
-else
-  echo "Skipping cert generation (missing script and ${CERT_COMPOSE_FILE})"
 fi
 
 cat > "${UNIT_PATH}" <<EOF

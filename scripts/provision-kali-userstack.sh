@@ -7,7 +7,7 @@ USERSTACK_SRC="/tmp/capstone-userstack"
 USERSTACK_DST="/opt/capstone-userstack"
 export DEBIAN_FRONTEND=noninteractive
 
-echo "[1/9] Fix Sources List & Update"
+echo "[1/8] Fix Sources List & Update"
 cat > /etc/apt/sources.list <<EOF
 deb http://http.kali.org/kali kali-rolling main contrib non-free non-free-firmware
 # deb-src http://http.kali.org/kali kali-rolling main contrib non-free non-free-firmware
@@ -15,7 +15,7 @@ EOF
 
 apt-get update -y >/dev/null
 
-echo "[2/9] Install Cloud-init, VNC & tools"
+echo "[2/8] Install Cloud-init, VNC & tools"
 # Cài thêm các gói thiếu vì không cài trong Preseed
 apt-get install -y --no-install-recommends \
   ca-certificates curl gnupg jq unzip npm \
@@ -25,7 +25,7 @@ apt-get install -y --no-install-recommends \
   sqlmap \
   nikto >/dev/null
 
-echo "[2.1/9] Ensure kali login password"
+echo "[2.1/8] Ensure kali login password"
 if id kali >/dev/null 2>&1; then
   echo "kali:kali" | chpasswd >/dev/null
   passwd -u kali >/dev/null 2>&1 || true
@@ -70,7 +70,7 @@ else
   echo "Skipping docker enable (docker not installed)"
 fi
 
-echo "[3/9] Configure VNC (XFCE)"
+echo "[3/8] Configure VNC (XFCE)"
 if ! id kali >/dev/null 2>&1; then
   echo "Skipping VNC setup (user kali not found)"
 elif ! command -v vncpasswd >/dev/null 2>&1 || ! command -v vncserver >/dev/null 2>&1; then
@@ -115,7 +115,7 @@ EOF
   systemctl enable vncserver@1.service >/dev/null
 fi
 
-echo "[4/9] Install Wazuh agent"
+echo "[4/8] Install Wazuh agent"
 if ! dpkg -s wazuh-agent >/dev/null 2>&1; then
   curl -fsSL https://packages.wazuh.com/key/GPG-KEY-WAZUH | gpg --dearmor -o /usr/share/keyrings/wazuh.gpg
   echo "deb [signed-by=/usr/share/keyrings/wazuh.gpg] https://packages.wazuh.com/4.x/apt/ stable main" > /etc/apt/sources.list.d/wazuh.list
@@ -136,7 +136,7 @@ fi
 systemctl stop wazuh-agent >/dev/null 2>&1 || true
 systemctl disable wazuh-agent >/dev/null 2>&1 || true
 
-echo "[5/9] Helper: set Wazuh manager IP later"
+echo "[5/8] Helper: set Wazuh manager IP later"
 cat > /usr/local/bin/wazuh-set-manager <<'EOF'
 #!/usr/bin/env bash
 set -euo pipefail
@@ -157,7 +157,7 @@ systemctl status wazuh-agent --no-pager
 EOF
 chmod +x /usr/local/bin/wazuh-set-manager
 
-echo "[6/9] Install capstone userstack files"
+echo "[6/8] Install capstone userstack files"
 if [[ ! -d "$USERSTACK_SRC" ]]; then
   echo "Missing $USERSTACK_SRC" >&2
   exit 1
@@ -180,22 +180,10 @@ fi
 
 chmod +x "$USERSTACK_DST/scripts"/*.sh || true
 
-echo "[7/9] Install capstone userstack service"
+echo "[7/8] Start capstone userstack (docker compose)"
 bash "$USERSTACK_DST/scripts/install-capstone-userstack-service.sh"
 
-echo "[8/9] Pre-pull/build docker images"
-if command -v docker >/dev/null 2>&1; then
-  (
-    cd "$USERSTACK_DST"
-    docker compose pull >/dev/null 2>&1 || true
-    docker compose build --pull >/dev/null 2>&1 || true
-  ) || true
-  systemctl stop capstone-userstack.service >/dev/null 2>&1 || true
-else
-  echo "Skipping docker compose pre-pull (docker not installed)"
-fi
-
-echo "[9/9] Optional: inject SSH public key"
+echo "[8/8] Optional: inject SSH public key"
 if [[ -n "${PACKER_SSH_PUBLIC_KEY:-}" && -d /home/kali ]]; then
   install -d -m 0700 -o kali -g kali /home/kali/.ssh
   echo "$PACKER_SSH_PUBLIC_KEY" > /home/kali/.ssh/authorized_keys

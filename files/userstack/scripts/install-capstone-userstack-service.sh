@@ -28,5 +28,29 @@ if [[ -f "${ENV_EXAMPLE}" && ! -f "${ENV_FILE}" ]]; then
   cp "${ENV_EXAMPLE}" "${ENV_FILE}"
 fi
 
+retry() {
+  local attempts="$1"
+  local delay="$2"
+  shift 2
+  local i=1
+
+  while true; do
+    if "$@"; then
+      return 0
+    fi
+    if (( i >= attempts )); then
+      return 1
+    fi
+    sleep "$delay"
+    i=$((i + 1))
+    delay=$((delay * 2))
+  done
+}
+
+COMPOSE_RETRY_ATTEMPTS="${COMPOSE_RETRY_ATTEMPTS:-2}"
+COMPOSE_RETRY_DELAY="${COMPOSE_RETRY_DELAY:-10}"
+
 cd "${STACK_DIR}"
-docker compose up -d >/dev/null
+if ! retry "${COMPOSE_RETRY_ATTEMPTS}" "${COMPOSE_RETRY_DELAY}" docker compose up -d >/dev/null; then
+  echo "Warning: docker compose up failed after ${COMPOSE_RETRY_ATTEMPTS} attempts; skipping" >&2
+fi

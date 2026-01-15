@@ -180,27 +180,8 @@ fi
 
 chmod +x "$USERSTACK_DST/scripts"/*.sh || true
 
-echo "[7/9] Create systemd service: capstone-userstack"
-cat > /etc/systemd/system/capstone-userstack.service <<'EOF'
-[Unit]
-Description=Capstone user lab stack (DVWA + JuiceShop + nginx-love)
-Wants=network-online.target docker.service
-After=network-online.target docker.service
-
-[Service]
-Type=oneshot
-RemainAfterExit=yes
-WorkingDirectory=/opt/capstone-userstack
-ExecStart=/usr/bin/docker compose up -d
-ExecStop=/usr/bin/docker compose down
-TimeoutStartSec=0
-
-[Install]
-WantedBy=multi-user.target
-EOF
-
-systemctl daemon-reload
-systemctl enable capstone-userstack.service
+echo "[7/9] Install capstone userstack service"
+bash "$USERSTACK_DST/scripts/install-capstone-userstack-service.sh"
 
 echo "[8/9] Pre-pull/build docker images"
 if command -v docker >/dev/null 2>&1; then

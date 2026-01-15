@@ -23,7 +23,7 @@ if [[ ! -f "${STACK_DIR}/docker-compose.yml" ]]; then
 fi
 
 if systemctl list-unit-files docker.service --no-legend 2>/dev/null | awk '{print $1}' | grep -qx docker.service; then
-  systemctl enable --now docker.service
+  systemctl enable --now docker.service >/dev/null
 fi
 
 if [[ -f "${ENV_EXAMPLE}" && ! -f "${ENV_FILE}" ]]; then
@@ -75,6 +75,6 @@ TimeoutStartSec=0
 WantedBy=multi-user.target
 EOF
 
-systemctl daemon-reload
-systemctl enable "${SERVICE_NAME}"
-systemctl start "${SERVICE_NAME}"
+systemctl daemon-reload >/dev/null
+systemctl enable "${SERVICE_NAME}" >/dev/null
+systemctl start --no-block "${SERVICE_NAME}" >/dev/null

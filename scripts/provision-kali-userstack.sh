@@ -13,7 +13,7 @@ deb http://http.kali.org/kali kali-rolling main contrib non-free non-free-firmwa
 # deb-src http://http.kali.org/kali kali-rolling main contrib non-free non-free-firmware
 EOF
 
-apt-get update -y
+apt-get update -y >/dev/null
 
 echo "[2/9] Install Cloud-init, VNC & tools"
 # Cài thêm các gói thiếu vì không cài trong Preseed
@@ -23,12 +23,12 @@ apt-get install -y --no-install-recommends \
   git \
   nmap \
   sqlmap \
-  nikto
+  nikto >/dev/null
 
 echo "[2.1/9] Ensure kali login password"
 if id kali >/dev/null 2>&1; then
-  echo "kali:kali" | chpasswd
-  passwd -u kali || true
+  echo "kali:kali" | chpasswd >/dev/null
+  passwd -u kali >/dev/null 2>&1 || true
   if [[ -d /home/kali ]]; then
     chown -R kali:kali /home/kali
   fi
@@ -42,26 +42,26 @@ if [[ "$DOCKER_CODENAME" == "kali-rolling" ]]; then
   DOCKER_CODENAME="bookworm"
 fi
 
-apt-get remove -y docker.io docker-doc docker-compose podman-docker containerd runc || true
+apt-get remove -y docker.io docker-doc docker-compose podman-docker containerd runc >/dev/null 2>&1 || true
 install -m 0755 -d /etc/apt/keyrings
 curl -fsSL https://download.docker.com/linux/debian/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg
 chmod a+r /etc/apt/keyrings/docker.gpg
 echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/debian ${DOCKER_CODENAME} stable" > /etc/apt/sources.list.d/docker.list
-apt-get update -y
+apt-get update -y >/dev/null
 apt-get install -y --no-install-recommends \
-  docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+  docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin >/dev/null
 
 # Enable cloud-init units that exist
 for svc in cloud-init-local.service cloud-init.service cloud-config.service cloud-final.service; do
   if systemctl list-unit-files "$svc" --no-legend 2>/dev/null | awk '{print $1}' | grep -qx "$svc"; then
-    systemctl enable "$svc"
+    systemctl enable "$svc" >/dev/null
   else
     echo "Skipping enable $svc (unit not found)"
   fi
 done
 
 if command -v docker >/dev/null 2>&1; then
-  systemctl enable --now docker
+  systemctl enable --now docker >/dev/null
   # Allow 'kali' user to run docker
   if id kali >/dev/null 2>&1; then
     usermod -aG docker kali || true
@@ -111,16 +111,16 @@ ExecStop=/usr/bin/vncserver -kill :%i
 WantedBy=multi-user.target
 EOF
 
-  systemctl daemon-reload
-  systemctl enable vncserver@1.service
+  systemctl daemon-reload >/dev/null
+  systemctl enable vncserver@1.service >/dev/null
 fi
 
 echo "[4/9] Install Wazuh agent"
 if ! dpkg -s wazuh-agent >/dev/null 2>&1; then
   curl -fsSL https://packages.wazuh.com/key/GPG-KEY-WAZUH | gpg --dearmor -o /usr/share/keyrings/wazuh.gpg
   echo "deb [signed-by=/usr/share/keyrings/wazuh.gpg] https://packages.wazuh.com/4.x/apt/ stable main" > /etc/apt/sources.list.d/wazuh.list
-  apt-get update -y
-  apt-get install -y wazuh-agent
+  apt-get update -y >/dev/null
+  apt-get install -y wazuh-agent >/dev/null
 fi
 
 # Configure Wazuh placeholders
@@ -133,8 +133,8 @@ if [[ -f "$WAZUH_CONF" ]]; then
   fi
 fi
 
-systemctl stop wazuh-agent || true
-systemctl disable wazuh-agent || true
+systemctl stop wazuh-agent >/dev/null 2>&1 || true
+systemctl disable wazuh-agent >/dev/null 2>&1 || true
 
 echo "[5/9] Helper: set Wazuh manager IP later"
 cat > /usr/local/bin/wazuh-set-manager <<'EOF'
@@ -187,10 +187,10 @@ echo "[8/9] Pre-pull/build docker images"
 if command -v docker >/dev/null 2>&1; then
   (
     cd "$USERSTACK_DST"
-    docker compose pull || true
-    docker compose build --pull || true
+    docker compose pull >/dev/null 2>&1 || true
+    docker compose build --pull >/dev/null 2>&1 || true
   ) || true
-  systemctl stop capstone-userstack.service || true
+  systemctl stop capstone-userstack.service >/dev/null 2>&1 || true
 else
   echo "Skipping docker compose pre-pull (docker not installed)"
 fi
@@ -205,7 +205,7 @@ fi
 
 echo "[DONE] Cleanup"
 rm -rf /tmp/capstone-userstack /tmp/scripts || true
-apt-get autoremove -y || true
-apt-get clean
+apt-get autoremove -y >/dev/null 2>&1 || true
+apt-get clean >/dev/null 2>&1
 rm -rf /var/lib/apt/lists/* || true
 

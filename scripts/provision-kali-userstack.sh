@@ -36,6 +36,21 @@ else
   echo "Skipping password reset (user kali not found)"
 fi
 
+echo "[2.2/8] Ensure researcher user (restricted)"
+RESEARCHER_USER="researcher"
+RESEARCHER_PASSWORD="${RESEARCHER_PASSWORD:-researcher}"
+if ! id "${RESEARCHER_USER}" >/dev/null 2>&1; then
+  useradd -m -s /bin/bash "${RESEARCHER_USER}"
+fi
+echo "${RESEARCHER_USER}:${RESEARCHER_PASSWORD}" | chpasswd >/dev/null
+passwd -u "${RESEARCHER_USER}" >/dev/null 2>&1 || true
+if getent group sudo >/dev/null 2>&1; then
+  deluser "${RESEARCHER_USER}" sudo >/dev/null 2>&1 || true
+fi
+if getent group docker >/dev/null 2>&1; then
+  gpasswd -d "${RESEARCHER_USER}" docker >/dev/null 2>&1 || true
+fi
+
 # Docker CE (official)
 DOCKER_CODENAME="$(. /etc/os-release && echo "${VERSION_CODENAME}")"
 if [[ "$DOCKER_CODENAME" == "kali-rolling" ]]; then

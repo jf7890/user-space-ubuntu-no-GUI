@@ -52,4 +52,3 @@ ensure_host() {
 }
 
 ensure_host "dvwa.local"
-ensure_host "juiceshop.local"

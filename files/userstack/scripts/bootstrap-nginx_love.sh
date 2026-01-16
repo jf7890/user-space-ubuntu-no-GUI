@@ -13,7 +13,6 @@ NEW_ADMIN_PASSWORD="${NEW_ADMIN_PASSWORD:-Changeme123!}"
 TOTP_CODE="${TOTP_CODE:-}"
 
 PROXY_CONTAINER="${PROXY_CONTAINER:-blueteam_stack-nginx-1}"
-JUICESHOP_CONTAINER="${JUICESHOP_CONTAINER:-juice-shop}"
 DVWA_CONTAINER="${DVWA_CONTAINER:-dvwa}"
 
 AUTO_CONNECT_NETWORK="${AUTO_CONNECT_NETWORK:-true}"
@@ -322,13 +321,11 @@ main() {
     NEW_ADMIN_PASSWORD="$ADMIN_PASSWORD"
   fi
 
-  log "=== Step 0: Resolve upstream IPs (from container names) ==="
-  local juice_ip dvwa_ip
-  juice_ip="$(resolve_upstream_ip "$PROXY_CONTAINER" "$JUICESHOP_CONTAINER")"
+  log "=== Step 0: Resolve upstream IP (from container name) ==="
+  local dvwa_ip
   dvwa_ip="$(resolve_upstream_ip "$PROXY_CONTAINER" "$DVWA_CONTAINER")"
 
-  local DOMAIN_JUICESHOP_PAYLOAD DOMAIN_DVWA_PAYLOAD
-  DOMAIN_JUICESHOP_PAYLOAD="$(build_domain_payload "juiceshop.local" "$juice_ip" 3000)"
+  local DOMAIN_DVWA_PAYLOAD
   DOMAIN_DVWA_PAYLOAD="$(build_domain_payload "dvwa.local" "$dvwa_ip" 80)"
 
   log "=== Step 1: Login & (if required) change admin password ==="
@@ -336,10 +333,7 @@ main() {
   token="$(login_with_fallback)"
   log "Access token acquired."
 
-  log "=== Step 2: Create juiceshop.local ==="
-  create_domain "$token" "$DOMAIN_JUICESHOP_PAYLOAD"
-
-  log "=== Step 3: Create dvwa.local ==="
+  log "=== Step 2: Create dvwa.local ==="
   create_domain "$token" "$DOMAIN_DVWA_PAYLOAD"
 
   log "Bootstrap completed."

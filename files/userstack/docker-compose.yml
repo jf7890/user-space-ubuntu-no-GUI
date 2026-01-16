@@ -135,7 +135,6 @@ services:
       NEW_ADMIN_PASSWORD: ${NEW_ADMIN_PASSWORD}
       TOTP_CODE: "${TOTP_CODE:-}"
       PROXY_CONTAINER: "nginx-love-backend"
-      JUICESHOP_CONTAINER: "juice-shop"
       DVWA_CONTAINER: "dvwa"
       AUTO_CONNECT_NETWORK: "true"
     depends_on:
@@ -144,8 +143,6 @@ services:
       backend:
         condition: service_healthy
       dvwa:
-        condition: service_started
-      juiceshop:
         condition: service_started
     entrypoint: ["/bin/sh"]
     command:
@@ -202,51 +199,7 @@ services:
     networks:
       - capstone-dmz-network
 
-  postgres:
-    image: postgres:15
-    container_name: postgres-juiceshop
-    restart: unless-stopped
-    environment:
-      - POSTGRES_DB=${JUICE_SHOP_POSTGRES_DB:-juiceshop}
-      - POSTGRES_USER=${JUICE_SHOP_POSTGRES_USER:-juiceshop}
-      - POSTGRES_PASSWORD=${JUICE_SHOP_POSTGRES_PASSWORD:-juiceshop123}
-      - TZ=${TZ:-Asia/Ho_Chi_Minh}
-    volumes:
-      - ./config/postgres-logging.conf:/etc/postgresql/postgresql.conf:ro
-      - ./logs/postgres:/var/log/postgresql
-      - postgres_data:/var/lib/postgresql/data
-      - ./scripts/init-postgres.sh:/docker-entrypoint-initdb.d/init-postgres.sh:ro
-
-    # Use custom entrypoint to fix log directory permissions before starting postgres
-    entrypoint: ["/bin/bash", "/docker-entrypoint-initdb.d/init-postgres.sh"]
-    networks:
-      - capstone-dmz-network
-
-  juiceshop:
-    image: hotailienvykha/juiceshop-fork:latest
-    container_name: juice-shop
-    restart: unless-stopped
-    environment:
-      - TZ=${TZ:-Asia/Ho_Chi_Minh}
-      - NODE_ENV=${NODE_ENV:-development}
-      # Database configuration - can be changed via environment
-      - DB_DIALECT=${DB_DIALECT:-postgres}
-      - DB_HOST=${JUICE_SHOP_DB_HOST:-postgres}
-      - DB_PORT=${JUICE_SHOP_DB_PORT:-5432}
-      - DB_NAME=${JUICE_SHOP_DB_NAME:-juiceshop}
-      - DB_USER=${JUICE_SHOP_DB_USER:-juiceshop}
-      - DB_PASSWORD=${JUICE_SHOP_DB_PASSWORD:-juiceshop123}
-    depends_on:
-      - postgres
-    volumes:
-      - ./logs/juiceshop:/var/log/juiceshop
-      - ./logs/juiceshop:/juice-shop/logs/access.log.*
-      - ./fim/juiceshop_uploads:/juice-shop/uploads
-    networks:
-      - capstone-dmz-network
-
 volumes:
-  postgres_data:
   postgres_nginx_love_data:
     driver: local
   backup:

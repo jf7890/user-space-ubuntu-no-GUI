@@ -123,14 +123,15 @@ if ! dpkg -s wazuh-agent >/dev/null 2>&1; then
   apt-get install -y wazuh-agent >/dev/null
 fi
 
-# Configure Wazuh placeholders
+# Configure Wazuh agent config
 WAZUH_CONF="/var/ossec/etc/ossec.conf"
-if [[ -f "$WAZUH_CONF" ]]; then
-  sed -i 's|<address>[^<]*</address>|<address>__WAZUH_MANAGER__</address>|' "$WAZUH_CONF" || true
-  
-  if ! grep -q "CAPSTONE_USERSTACK_LOGS" "$WAZUH_CONF"; then
-    perl -0777 -i -pe 's#</ossec_config>#  \n  <localfile>\n    <log_format>syslog</log_format>\n    <location>/opt/capstone-userstack/logs/nginx/access.log</location>\n  </localfile>\n  <localfile>\n    <log_format>syslog</log_format>\n    <location>/opt/capstone-userstack/logs/nginx/error.log</location>\n  </localfile>\n  <localfile>\n    <log_format>json</log_format>\n    <location>/opt/capstone-userstack/logs/modsecurity/modsec_audit.log</location>\n  </localfile>\n  <localfile>\n    <log_format>syslog</log_format>\n    <location>/opt/capstone-userstack/logs/apache/access.log</location>\n  </localfile>\n  <localfile>\n    <log_format>syslog</log_format>\n    <location>/opt/capstone-userstack/logs/apache/error.log</location>\n  </localfile>\n  <localfile>\n    <log_format>syslog</log_format>\n    <location>/opt/capstone-userstack/logs/mysql/error.log</location>\n  </localfile>\n  <localfile>\n    <log_format>syslog</log_format>\n    <location>/opt/capstone-userstack/logs/postgres/postgresql.log</location>\n  </localfile>\n</ossec_config>#s' "$WAZUH_CONF"
-  fi
+USERSTACK_WAZUH_CONF="${USERSTACK_DST}/config/ossec.conf"
+if [[ -f "$USERSTACK_WAZUH_CONF" ]]; then
+  install -m 0644 "$USERSTACK_WAZUH_CONF" "$WAZUH_CONF"
+fi
+
+if [[ -n "${WAZUH_MANAGER:-}" && -f "$WAZUH_CONF" ]]; then
+  sed -i "s|<address>[^<]*</address>|<address>${WAZUH_MANAGER}</address>|" "$WAZUH_CONF" || true
 fi
 
 systemctl stop wazuh-agent >/dev/null 2>&1 || true
@@ -150,7 +151,7 @@ if [[ ! -f "$conf" ]]; then
   echo "Cannot find $conf" >&2
   exit 1
 fi
-sed -i "s|<address>__WAZUH_MANAGER__</address>|<address>${mgr}</address>|" "$conf"
+sed -i "s|<address>[^<]*</address>|<address>${mgr}</address>|" "$conf"
 systemctl enable --now wazuh-agent
 systemctl restart wazuh-agent
 systemctl status wazuh-agent --no-pager

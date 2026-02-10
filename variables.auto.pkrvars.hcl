@@ -1,7 +1,7 @@
 proxmox_skip_tls_verify = true
 proxmox_username="root@pam!packer"
 
-vm_storage      = "local-lvm"
+vm_storage      = "hdd-lvm"
 proxmox_storage = "local-lvm"
 iso_storage     = "hdd-data"
 

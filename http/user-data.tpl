@@ -1,27 +1,36 @@
 #cloud-config
 autoinstall:
   version: 1
-  locale: en_US
+  locale: en_US.UTF-8
   keyboard:
     layout: us
+  timezone: Asia/Ho_Chi_Minh
+
   identity:
-    hostname: ubuntu-userstack
+    hostname: ${hostname}
     username: ubuntu
-    password: "$6$rounds=656000$Q60Ql0NqJ/sk3r.Z$39aQ3iPEkDF5x.GbXAPEmZuKNxWwEd9jiGO5jdZ0lIumyt/saqtacJNpZyumFPq2xuBrA4OxVLCMCkuijcU6T0"
+    password: "${ubuntu_password_hash}"
+
   ssh:
     install-server: true
     allow-pw: true
-  storage:
-    layout:
-      name: direct
+%{ if ssh_public_key != "" }
+    authorized-keys:
+      - "${ssh_public_key}"
+%{ endif }
+
+  network:
+    version: 2
+    ethernets:
+      ens18:
+        dhcp4: true
+        dhcp6: false
+        optional: true
+
   packages:
     - qemu-guest-agent
     - sudo
-  user-data:
-    package_update: false
-    package_upgrade: false
-    ssh_pwauth: true
-    timezone: Asia/Ho_Chi_Minh
+
   late-commands:
     - curtin in-target -- systemctl enable ssh
     - curtin in-target -- /bin/sh -c "echo 'ubuntu ALL=(ALL) NOPASSWD:ALL' > /etc/sudoers.d/ubuntu"

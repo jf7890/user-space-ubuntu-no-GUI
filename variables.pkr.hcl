@@ -70,6 +70,16 @@ variable "template_description" {
   default = "Ubuntu Server (Capstone)"
 }
 
+variable "hostname" {
+  type    = string
+  default = "ubuntu-userstack"
+}
+
+variable "ubuntu_password_hash" {
+  type = string
+  default = "$6$rounds=656000$Q60Ql0NqJ/sk3r.Z$39aQ3iPEkDF5x.GbXAPEmZuKNxWwEd9jiGO5jdZ0lIumyt/saqtacJNpZyumFPq2xuBrA4OxVLCMCkuijcU6T0"
+}
+
 variable "cores" {
   type    = number
   default = 2

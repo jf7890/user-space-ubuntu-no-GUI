@@ -8,6 +8,7 @@ iso_storage     = "hdd-data"
 template_vm_id       = 0
 template_name        = "tpl-ubuntu-server"
 template_description = "Ubuntu Server (Capstone)"
+hostname             = "ubuntu-userstack"
 
 cores              = 4
 memory             = 6144

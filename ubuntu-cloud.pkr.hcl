@@ -75,7 +75,17 @@ source "proxmox-iso" "ubuntu-server" {
   boot      = "c"
   boot_wait = "4s"
 
-  http_directory    = "http"
+  http_content = {
+    "/user-data" = templatefile("${path.root}/http/user-data.tpl", {
+      hostname             = var.hostname
+      ssh_public_key       = var.ssh_public_key
+      ubuntu_password_hash = var.ubuntu_password_hash
+    })
+    "/meta-data" = templatefile("${path.root}/http/meta-data.tpl", {
+      hostname = var.hostname
+    })
+  }
+
   http_bind_address = "0.0.0.0"
   http_port_min     = 8902
   http_port_max     = 8902

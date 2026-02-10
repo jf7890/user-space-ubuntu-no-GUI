@@ -69,15 +69,13 @@ source "proxmox-iso" "ubuntu-server" {
   boot_command = [
     "<esc><wait>",
     "<esc><wait>",
-    "<esc><wait>",
-    "<esc><wait>",
-    "e<wait>",
-    "<down><down><down><end><wait>",
-    " ip=dhcp autoinstall ds=nocloud-net\\;s=http://{{ .HTTPIP }}:{{ .HTTPPort }}/ cloud-config-url=/dev/null net.ifnames=0 biosdevname=0 ---<wait>",
-    "<f10><wait>"
+    "c<wait>",
+    "linux /casper/vmlinuz ip=dhcp autoinstall ds=nocloud-net\\;s=http://{{ .HTTPIP }}:{{ .HTTPPort }}/ cloud-config-url=/dev/null net.ifnames=0 biosdevname=0 ---<enter><wait>",
+    "initrd /casper/initrd<enter><wait>",
+    "boot<enter>"
   ]
   boot      = "c"
-  boot_wait = "0s"
+  boot_wait = "5s"
 
   http_content = {
     "/user-data" = templatefile("${path.root}/http/user-data.tpl", {

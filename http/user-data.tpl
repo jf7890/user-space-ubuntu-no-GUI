@@ -27,7 +27,17 @@ autoinstall:
         dhcp6: false
         optional: true
         dhcp-identifier: mac
+      eth1:
+        dhcp4: true
+        dhcp6: false
+        optional: true
+        dhcp-identifier: mac
       ens18:
+        dhcp4: true
+        dhcp6: false
+        optional: true
+        dhcp-identifier: mac
+      ens19:
         dhcp4: true
         dhcp6: false
         optional: true

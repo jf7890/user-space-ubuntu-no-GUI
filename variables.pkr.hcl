@@ -42,9 +42,24 @@ variable "bridge_lan" {
   default = env("PACKER_BRIDGE_LAN")
 }
 
+variable "bridge_mgmt" {
+  type    = string
+  default = "vmbr10"
+}
+
 variable "lan_vlan_tag" {
   type    = number
   default = 0
+}
+
+variable "mgmt_vlan_tag" {
+  type    = number
+  default = 0
+}
+
+variable "vm_interface" {
+  type    = string
+  default = "eth0"
 }
 
 variable "ssh_public_key" {

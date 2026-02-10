@@ -42,10 +42,10 @@ variable "bridge_lan" {
   default = env("PACKER_BRIDGE_LAN")
 }
 
-#variable "lan_vlan_tag" {
-#  type    = number
-#  default = 0
-#}
+variable "lan_vlan_tag" {
+  type    = number
+  default = 0
+}
 
 variable "ssh_public_key" {
   type    = string

@@ -53,7 +53,7 @@ source "proxmox-iso" "ubuntu-server" {
     model    = "virtio"
     bridge   = var.bridge_lan
     firewall = false
-    vlan_tag = var.lan_vlan_tag
+   # vlan_tag = var.lan_vlan_tag
   }
 
   vga {

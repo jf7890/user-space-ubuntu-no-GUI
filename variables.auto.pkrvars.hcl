@@ -5,8 +5,6 @@ vm_storage      = "hdd-lvm"
 proxmox_storage = "local-lvm"
 iso_storage     = "hdd-data"
 
-bridge_mgmt = "vmbr10"
-
 template_vm_id       = 0
 template_name        = "tpl-ubuntu-server"
 template_description = "Ubuntu Server (Capstone)"

@@ -49,15 +49,6 @@ source "proxmox-iso" "ubuntu-server" {
   memory             = var.memory
   ballooning_minimum = var.ballooning_minimum
 
-  # net0: mgmt (DHCP, used for autoinstall/SSH)
-  network_adapters {
-    model    = "virtio"
-    bridge   = var.bridge_mgmt
-    firewall = false
-    vlan_tag = var.mgmt_vlan_tag
-  }
-
-  # net1: target VLAN
   network_adapters {
     model    = "virtio"
     bridge   = var.bridge_lan
@@ -102,9 +93,6 @@ source "proxmox-iso" "ubuntu-server" {
   http_bind_address = "0.0.0.0"
   http_port_min     = 8902
   http_port_max     = 8902
-
-  # use mgmt NIC for provisioning
-  vm_interface = var.vm_interface
 
   ssh_username = "ubuntu"
   ssh_password = "ubuntu"

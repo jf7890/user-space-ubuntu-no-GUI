@@ -65,15 +65,19 @@ source "proxmox-iso" "ubuntu-server" {
   cloud_init              = true
   cloud_init_storage_pool = var.proxmox_storage
 
+  boot_key_interval = "50ms"
   boot_command = [
+    "<esc><wait>",
+    "<esc><wait>",
+    "<esc><wait>",
     "<esc><wait>",
     "e<wait>",
     "<down><down><down><end><wait>",
-    " autoinstall ds=nocloud-net\\;s=http://{{ .HTTPIP }}:{{ .HTTPPort }}/ cloud-config-url=/dev/null net.ifnames=0 biosdevname=0 ---<wait>",
+    " ip=dhcp autoinstall ds=nocloud-net\\;s=http://{{ .HTTPIP }}:{{ .HTTPPort }}/ cloud-config-url=/dev/null net.ifnames=0 biosdevname=0 ---<wait>",
     "<f10><wait>"
   ]
   boot      = "c"
-  boot_wait = "4s"
+  boot_wait = "0s"
 
   http_content = {
     "/user-data" = templatefile("${path.root}/http/user-data.tpl", {

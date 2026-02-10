@@ -70,7 +70,7 @@ source "proxmox-iso" "ubuntu-server" {
     "<esc><wait>",
     "<esc><wait>",
     "c<wait>",
-    "linux /casper/vmlinuz ip=dhcp autoinstall ds=nocloud-net\\;s=http://{{ .HTTPIP }}:{{ .HTTPPort }}/ cloud-config-url=/dev/null net.ifnames=0 biosdevname=0 ---<enter><wait>",
+    "linux /casper/vmlinuz ip=dhcp autoinstall ds=nocloud-net\\;s=http://{{ .HTTPIP }}:{{ .HTTPPort }}/ cloud-config-url=/dev/null ---<enter><wait>",
     "initrd /casper/initrd<enter><wait>",
     "boot<enter>"
   ]

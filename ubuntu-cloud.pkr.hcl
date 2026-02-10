@@ -8,7 +8,7 @@ packer {
 }
 
 // --- VM template build ---
-source "proxmox-iso" "kali-xfce" {
+source "proxmox-iso" "ubuntu-server" {
   # Proxmox
   proxmox_url              = var.proxmox_url
   username                 = var.proxmox_username
@@ -69,15 +69,10 @@ source "proxmox-iso" "kali-xfce" {
     "<esc><wait>",
     "<esc><wait>",
     "<esc><wait>",
-
-    "install auto=true priority=critical desktop=xfce debconf/frontend=noninteractive ",
-    "preseed/url=http://{{ .HTTPIP }}:{{ .HTTPPort }}/cloud.cfg ",
-    "debian-installer/locale=en_US.UTF-8 locale=en_US.UTF-8 ",
-    "keyboard-configuration/xkb-keymap=us console-keymaps-at/keymap=us ",
-    "netcfg/choose_interface=auto netcfg/get_hostname=kali netcfg/get_domain=local ",
-    "fb=false console-setup/ask_detect=false <wait>",
-
-    "<enter><wait>"
+    "c<wait>",
+    "linux /casper/vmlinuz ip=dhcp autoinstall ds=nocloud-net;s=http://{{ .HTTPIP }}:{{ .HTTPPort }}/ ---<enter><wait>",
+    "initrd /casper/initrd<enter><wait>",
+    "boot<enter>"
   ]
   boot      = "c"
   boot_wait = "5s"
@@ -87,8 +82,8 @@ source "proxmox-iso" "kali-xfce" {
   http_port_min     = 8902
   http_port_max     = 8902
 
-  ssh_username = "kali"
-  ssh_password = "kali"
+  ssh_username = "ubuntu"
+  ssh_password = "ubuntu"
   ssh_timeout  = "2h"
 
   # If you provide PACKER_SSH_PRIVATE_KEY_FILE, packer will prefer it.

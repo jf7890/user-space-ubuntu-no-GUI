@@ -4,8 +4,8 @@ set -euo pipefail
 KEYFILE="/var/ossec/etc/client.keys"
 DEFAULT_PASSWORD="${DEFAULT_PASSWORD:-CyR4ng3_123}"
 OUTPUT_TARGETS=()
-if [[ -d /home/kali ]]; then
-  OUTPUT_TARGETS+=("kali:/home/kali/wazuh-login.txt")
+if [[ -d /home/ubuntu ]]; then
+  OUTPUT_TARGETS+=("ubuntu:/home/ubuntu/wazuh-login.txt")
 fi
 if [[ -d /home/researcher ]]; then
   OUTPUT_TARGETS+=("researcher:/home/researcher/wazuh-login.txt")

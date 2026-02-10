@@ -6,17 +6,17 @@ proxmox_storage = "local-lvm"
 iso_storage     = "hdd-data"
 
 template_vm_id       = 0
-template_name        = "tpl-kali-xfce"
-template_description = "Kali XFCE (Capstone)"
+template_name        = "tpl-ubuntu-server"
+template_description = "Ubuntu Server (Capstone)"
 
 cores              = 4
 memory             = 6144
 ballooning_minimum = 0
 disk_size          = "30G"
 
-# Kali ISO (Installer amd64) + checksum
-iso_url             = "https://cdimage.kali.org/kali-2025.4/kali-linux-2025.4-installer-amd64.iso"
-iso_checksum        = "sha256:3b4a3a9f5fb6532635800d3eda94414fb69a44165af6db6fa39c0bdae750c266"
+# Ubuntu Server ISO (amd64) + checksum
+iso_url      = "https://releases.ubuntu.com/22.04/ubuntu-22.04.5-live-server-amd64.iso"
+iso_checksum = "file:https://releases.ubuntu.com/22.04/SHA256SUMS"
 
 lan_vlan_tag = 10
 task_timeout = "2h"

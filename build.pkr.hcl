@@ -1,7 +1,7 @@
 
 build {
-  name    = "kali"
-  sources = ["source.proxmox-iso.kali-xfce"]
+  name    = "ubuntu"
+  sources = ["source.proxmox-iso.ubuntu-server"]
 
 
   # Proxmox cloud-init tweaks
@@ -31,8 +31,8 @@ build {
 
   provisioner "shell" {
     inline = [
-      "sudo chmod +x /tmp/scripts/provision-kali-userstack.sh",
-      "cd /tmp/scripts && sudo -E bash ./provision-kali-userstack.sh"
+      "sudo chmod +x /tmp/scripts/provision-ubuntu-userstack.sh",
+      "cd /tmp/scripts && sudo -E bash ./provision-ubuntu-userstack.sh"
     ]
   }
 

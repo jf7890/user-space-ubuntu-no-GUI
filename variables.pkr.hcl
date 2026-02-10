@@ -67,7 +67,7 @@ variable "template_name" {
 
 variable "template_description" {
   type    = string
-  default = "Kali XFCE (Capstone)"
+  default = "Ubuntu Server (Capstone)"
 }
 
 variable "cores" {

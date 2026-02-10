@@ -19,5 +19,5 @@ disk_size          = "30G"
 iso_url      = "https://releases.ubuntu.com/22.04/ubuntu-22.04.5-live-server-amd64.iso"
 iso_checksum = "file:https://releases.ubuntu.com/22.04/SHA256SUMS"
 
-lan_vlan_tag = 100
+lan_vlan_tag = 99
 task_timeout = "2h"

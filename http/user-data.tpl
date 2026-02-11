@@ -14,23 +14,24 @@ autoinstall:
   ssh:
     install-server: true
     allow-pw: true
-    %{ if ssh_public_key != "" }
-        authorized-keys:
-          - "${ssh_public_key}"
-    %{ endif }
+%{ if ssh_public_key != "" ~}
+    authorized-keys:
+      - "${ssh_public_key}"
+%{ endif ~}
 
   network:
     version: 2
     ethernets:
-      ens18:
+      eth0:
+        match:
+          name: "en*"
         dhcp4: true
         dhcp6: false
         optional: true
-        dhcp-identifier: mac
 
-      packages:
-        - qemu-guest-agent
-        - sudo
+  packages:
+    - qemu-guest-agent
+    - sudo
 
   late-commands:
     - curtin in-target -- systemctl enable ssh

@@ -5,6 +5,8 @@ set -euo pipefail
 
 USERSTACK_SRC="/tmp/capstone-userstack"
 USERSTACK_DST="/opt/capstone-userstack"
+REDTEAM_ENGINE_SRC="/tmp/Redteam-Attack-Engine-Minimal"
+REDTEAM_ENGINE_DST="/opt/Redteam-Attack-Engine-Minimal"
 BLUETEAM_AGENT_DST="/opt/capstone-blueteam-agent"
 BLUETEAM_AGENT_REPO_URL="${BLUETEAM_AGENT_REPO_URL:-https://github.com/CyberSecN00bers/Blueteam-Agent-Minimal.git}"
 BLUETEAM_AGENT_REPO_REF="${BLUETEAM_AGENT_REPO_REF:-main}"
@@ -191,7 +193,20 @@ if [[ -f "$USERSTACK_DST/scripts/refresh-capstone-blueteam-agent.sh" ]]; then
   chmod +x /usr/local/bin/refresh-blueteam-agent || true
 fi
 
-echo "[5.1/8] Clone blueteam agent repository"
+echo "[5.1/8] Install redteam attack engine files"
+if [[ -d "$REDTEAM_ENGINE_SRC" ]]; then
+  rm -rf "$REDTEAM_ENGINE_DST"
+  mkdir -p "$REDTEAM_ENGINE_DST"
+  cp -a "$REDTEAM_ENGINE_SRC"/. "$REDTEAM_ENGINE_DST"/
+
+  if [[ -f "$REDTEAM_ENGINE_DST/.env.example" && ! -f "$REDTEAM_ENGINE_DST/.env" ]]; then
+    cp "$REDTEAM_ENGINE_DST/.env.example" "$REDTEAM_ENGINE_DST/.env"
+  fi
+else
+  echo "Skipping redteam attack engine install ($REDTEAM_ENGINE_SRC not found)"
+fi
+
+echo "[5.2/8] Clone blueteam agent repository"
 rm -rf "$BLUETEAM_AGENT_DST"
 BLUETEAM_AGENT_GIT_ATTEMPTS="${BLUETEAM_AGENT_GIT_ATTEMPTS:-3}"
 BLUETEAM_AGENT_GIT_DELAY="${BLUETEAM_AGENT_GIT_DELAY:-10}"
@@ -209,7 +224,7 @@ if [[ -f "$BLUETEAM_AGENT_DST/.env.example" && ! -f "$BLUETEAM_AGENT_DST/.env" ]
   cp "$BLUETEAM_AGENT_DST/.env.example" "$BLUETEAM_AGENT_DST/.env"
 fi
 
-echo "[5.2/8] Configure Wazuh agent auto-enroll"
+echo "[5.3/8] Configure Wazuh agent auto-enroll"
 WAZUH_CONF="/var/ossec/etc/ossec.conf"
 USERSTACK_WAZUH_CONF="${USERSTACK_DST}/config/ossec.conf"
 if [[ -f "$USERSTACK_WAZUH_CONF" ]]; then
@@ -344,7 +359,7 @@ rm -f /var/lib/dbus/machine-id
 ln -sf /etc/machine-id /var/lib/dbus/machine-id
 
 echo "[DONE] Cleanup"
-rm -rf /tmp/capstone-userstack /tmp/scripts || true
+rm -rf /tmp/capstone-userstack /tmp/Redteam-Attack-Engine-Minimal /tmp/scripts || true
 apt-get autoremove -y >/dev/null 2>&1 || true
 apt-get clean >/dev/null 2>&1
 rm -rf /var/lib/apt/lists/* || true

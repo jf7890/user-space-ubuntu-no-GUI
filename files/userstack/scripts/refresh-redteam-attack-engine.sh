@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-STACK_DIR="${REDTEAM_ENGINE_DIR:-${REDTEAM_ATTACK_ENGINE_DIR:-/opt/Redteam-Attack-Engine-Minimal}}"
+STACK_DIR="${REDTEAM_ENGINE_DIR:-${REDTEAM_ATTACK_ENGINE_DIR:-/opt/redteam-attack-engine}}"
 REPO_REF="${REDTEAM_ENGINE_REPO_REF:-main}"
 
 if [[ "${EUID}" -ne 0 ]]; then

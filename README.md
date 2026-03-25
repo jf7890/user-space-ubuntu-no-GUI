@@ -1,12 +1,12 @@
 # Capstone Userstack (nginx-love)
 
 This repo builds a VM template that ships a pre-pulled nginx-love stack, pre-builds the frontend image cache when possible, and provides a small set of helper scripts to configure it on first boot.
-It also clones the BlueAgent repository into `/opt/capstone-blueteam-agent` and the Redteam Attack Engine repository into `/opt/Redteam-Attack-Engine-Minimal`, pre-pulls their images, and leaves them ready for later `git pull` updates.
+It also clones the BlueAgent repository into `/opt/capstone-blueteam-agent` and the Redteam Attack Engine repository into `/opt/redteam-attack-engine`, pre-pulls their images, and leaves them ready for later `git pull` updates.
 
 **What is included**
 - Docker Compose stack at `/opt/capstone-userstack` (backend, frontend, postgres).
 - BlueAgent AI stack cloned separately at `/opt/capstone-blueteam-agent`.
-- Redteam Attack Engine stack cloned separately at `/opt/Redteam-Attack-Engine-Minimal`.
+- Redteam Attack Engine stack cloned separately at `/opt/redteam-attack-engine`.
 - Helper scripts:
   - `nginx-love-setup` (configure domain + admin password, then start stack).
   - `addweb` (create a new domain upstream via API).
@@ -148,7 +148,7 @@ sudo refresh-blueteam-agent
 ## Redteam Attack Engine Bundle
 
 The template clones the AI repo here:
-- `/opt/Redteam-Attack-Engine-Minimal`
+- `/opt/redteam-attack-engine`
 
 Notes:
 - The build clones `https://github.com/CyberSecN00bers/Redteam-Attack-Engine-Minimal.git` (branch `main` by default).

@@ -5,7 +5,7 @@ set -euo pipefail
 
 USERSTACK_SRC="/tmp/capstone-userstack"
 USERSTACK_DST="/opt/capstone-userstack"
-REDTEAM_ENGINE_DST="/opt/Redteam-Attack-Engine-Minimal"
+REDTEAM_ENGINE_DST="/opt/redteam-attack-engine"
 REDTEAM_ENGINE_REPO_URL="${REDTEAM_ENGINE_REPO_URL:-https://github.com/CyberSecN00bers/Redteam-Attack-Engine-Minimal.git}"
 REDTEAM_ENGINE_REPO_REF="${REDTEAM_ENGINE_REPO_REF:-main}"
 BLUETEAM_AGENT_DST="/opt/capstone-blueteam-agent"

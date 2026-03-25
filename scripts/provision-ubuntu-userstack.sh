@@ -5,8 +5,9 @@ set -euo pipefail
 
 USERSTACK_SRC="/tmp/capstone-userstack"
 USERSTACK_DST="/opt/capstone-userstack"
-REDTEAM_ENGINE_SRC="/tmp/Redteam-Attack-Engine-Minimal"
 REDTEAM_ENGINE_DST="/opt/Redteam-Attack-Engine-Minimal"
+REDTEAM_ENGINE_REPO_URL="${REDTEAM_ENGINE_REPO_URL:-https://github.com/CyberSecN00bers/Redteam-Attack-Engine-Minimal.git}"
+REDTEAM_ENGINE_REPO_REF="${REDTEAM_ENGINE_REPO_REF:-main}"
 BLUETEAM_AGENT_DST="/opt/capstone-blueteam-agent"
 BLUETEAM_AGENT_REPO_URL="${BLUETEAM_AGENT_REPO_URL:-https://github.com/CyberSecN00bers/Blueteam-Agent-Minimal.git}"
 BLUETEAM_AGENT_REPO_REF="${BLUETEAM_AGENT_REPO_REF:-main}"
@@ -192,18 +193,23 @@ if [[ -f "$USERSTACK_DST/scripts/refresh-capstone-blueteam-agent.sh" ]]; then
   ln -sf "$USERSTACK_DST/scripts/refresh-capstone-blueteam-agent.sh" /usr/local/bin/refresh-blueteam-agent
   chmod +x /usr/local/bin/refresh-blueteam-agent || true
 fi
+if [[ -f "$USERSTACK_DST/scripts/refresh-redteam-attack-engine.sh" ]]; then
+  ln -sf "$USERSTACK_DST/scripts/refresh-redteam-attack-engine.sh" /usr/local/bin/refresh-redteam-attack-engine
+  chmod +x /usr/local/bin/refresh-redteam-attack-engine || true
+fi
 
-echo "[5.1/8] Install redteam attack engine files"
-if [[ -d "$REDTEAM_ENGINE_SRC" ]]; then
-  rm -rf "$REDTEAM_ENGINE_DST"
-  mkdir -p "$REDTEAM_ENGINE_DST"
-  cp -a "$REDTEAM_ENGINE_SRC"/. "$REDTEAM_ENGINE_DST"/
+echo "[5.1/8] Clone redteam attack engine repository"
+rm -rf "$REDTEAM_ENGINE_DST"
+REDTEAM_ENGINE_GIT_ATTEMPTS="${REDTEAM_ENGINE_GIT_ATTEMPTS:-3}"
+REDTEAM_ENGINE_GIT_DELAY="${REDTEAM_ENGINE_GIT_DELAY:-10}"
+if ! retry "$REDTEAM_ENGINE_GIT_ATTEMPTS" "$REDTEAM_ENGINE_GIT_DELAY" \
+  git clone --depth 1 --branch "$REDTEAM_ENGINE_REPO_REF" --single-branch "$REDTEAM_ENGINE_REPO_URL" "$REDTEAM_ENGINE_DST"; then
+  echo "Redteam attack engine git clone failed after ${REDTEAM_ENGINE_GIT_ATTEMPTS} attempts" >&2
+  exit 1
+fi
 
-  if [[ -f "$REDTEAM_ENGINE_DST/.env.example" && ! -f "$REDTEAM_ENGINE_DST/.env" ]]; then
-    cp "$REDTEAM_ENGINE_DST/.env.example" "$REDTEAM_ENGINE_DST/.env"
-  fi
-else
-  echo "Skipping redteam attack engine install ($REDTEAM_ENGINE_SRC not found)"
+if [[ -f "$REDTEAM_ENGINE_DST/.env.example" && ! -f "$REDTEAM_ENGINE_DST/.env" ]]; then
+  cp "$REDTEAM_ENGINE_DST/.env.example" "$REDTEAM_ENGINE_DST/.env"
 fi
 
 echo "[5.2/8] Clone blueteam agent repository"
@@ -335,7 +341,14 @@ if command -v docker >/dev/null 2>&1; then
     echo "Warning: docker compose build --pull frontend failed after ${FRONTEND_BUILD_ATTEMPTS} attempts; continuing without prebuilt frontend cache" >&2
   fi
 
-  echo "[6.2/8] Pre-pull blueteam agent images"
+  echo "[6.2/8] Pre-pull redteam attack engine images"
+  cd "$REDTEAM_ENGINE_DST"
+  if ! retry "$COMPOSE_PULL_ATTEMPTS" "$COMPOSE_PULL_DELAY" docker compose pull; then
+    echo "Redteam attack engine docker compose pull failed after ${COMPOSE_PULL_ATTEMPTS} attempts" >&2
+    exit 1
+  fi
+
+  echo "[6.3/8] Pre-pull blueteam agent images"
   cd "$BLUETEAM_AGENT_DST"
   if ! retry "$COMPOSE_PULL_ATTEMPTS" "$COMPOSE_PULL_DELAY" docker compose pull; then
     echo "Blueteam agent docker compose pull failed after ${COMPOSE_PULL_ATTEMPTS} attempts" >&2
@@ -359,7 +372,7 @@ rm -f /var/lib/dbus/machine-id
 ln -sf /etc/machine-id /var/lib/dbus/machine-id
 
 echo "[DONE] Cleanup"
-rm -rf /tmp/capstone-userstack /tmp/Redteam-Attack-Engine-Minimal /tmp/scripts || true
+rm -rf /tmp/capstone-userstack /tmp/scripts || true
 apt-get autoremove -y >/dev/null 2>&1 || true
 apt-get clean >/dev/null 2>&1
 rm -rf /var/lib/apt/lists/* || true

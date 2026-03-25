@@ -21,15 +21,6 @@ build {
   }
 
   provisioner "shell" {
-    inline = ["mkdir -p /tmp/Redteam-Attack-Engine-Minimal"]
-  }
-
-  provisioner "file" {
-    source      = "files/Redteam-Attack-Engine-Minimal/"
-    destination = "/tmp/Redteam-Attack-Engine-Minimal"
-  }
-
-  provisioner "shell" {
     inline = ["mkdir -p /tmp/scripts"]
   }
 

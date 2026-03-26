@@ -1,17 +1,19 @@
 # Capstone Userstack (nginx-love)
 
 This repo builds a VM template that ships a pre-pulled nginx-love stack, pre-builds the frontend image cache when possible, and provides a small set of helper scripts to configure it on first boot.
-It also clones the BlueAgent repository into `/opt/capstone-blueteam-agent`, pre-pulls its images, and leaves it ready for later `git pull` updates.
+It also clones the BlueAgent repository into `/opt/capstone-blueteam-agent` and the Redteam Attack Engine repository into `/opt/redteam-attack-engine`, pre-pulls their images, and leaves them ready for later `git pull` updates.
 
 **What is included**
 - Docker Compose stack at `/opt/capstone-userstack` (backend, frontend, postgres).
 - BlueAgent AI stack cloned separately at `/opt/capstone-blueteam-agent`.
+- Redteam Attack Engine stack cloned separately at `/opt/redteam-attack-engine`.
 - Helper scripts:
   - `nginx-love-setup` (configure domain + admin password, then start stack).
   - `addweb` (create a new domain upstream via API).
   - `addport` / `gor-mirror-ports` (start or update GoReplay port mirroring to `http://127.0.0.1:60085`).
   - `start-capstone-userstack.sh` (start compose on boot when service is enabled).
   - `refresh-blueteam-agent` (pull latest BlueAgent repo changes and refresh containers).
+  - `refresh-redteam-attack-engine` (pull latest Redteam repo changes and refresh containers).
 
 DVWA has been removed from the stack.
 
@@ -141,4 +143,19 @@ Notes:
 To refresh later without rebuilding the template:
 ```bash
 sudo refresh-blueteam-agent
+```
+
+## Redteam Attack Engine Bundle
+
+The template clones the AI repo here:
+- `/opt/redteam-attack-engine`
+
+Notes:
+- The build clones `https://github.com/CyberSecN00bers/Redteam-Attack-Engine-Minimal.git` (branch `main` by default).
+- If `.env.example` exists and `.env` is missing, the build copies `.env.example` to `.env`.
+- Images are pre-pulled during provisioning with `docker compose pull`.
+
+To refresh later without rebuilding the template:
+```bash
+sudo refresh-redteam-attack-engine
 ```

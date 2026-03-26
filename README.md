@@ -2,11 +2,13 @@
 
 This repo builds a VM template that ships a pre-pulled nginx-love stack, pre-builds the frontend image cache when possible, and provides a small set of helper scripts to configure it on first boot.
 It also clones the BlueAgent repository into `/opt/capstone-blueteam-agent` and the Redteam Attack Engine repository into `/opt/redteam-attack-engine`, pre-pulls their images, and leaves them ready for later `git pull` updates.
+It also clones the Cyber Shell Backend repository into `/opt/cyber-shell-backend`, pre-pulls its images, and leaves it ready for later `git pull` updates.
 
 **What is included**
 - Docker Compose stack at `/opt/capstone-userstack` (backend, frontend, postgres).
 - BlueAgent AI stack cloned separately at `/opt/capstone-blueteam-agent`.
 - Redteam Attack Engine stack cloned separately at `/opt/redteam-attack-engine`.
+- Cyber Shell Backend cloned separately at `/opt/cyber-shell-backend`.
 - Helper scripts:
   - `nginx-love-setup` (configure domain + admin password, then start stack).
   - `addweb` (create a new domain upstream via API).
@@ -14,6 +16,7 @@ It also clones the BlueAgent repository into `/opt/capstone-blueteam-agent` and 
   - `start-capstone-userstack.sh` (start compose on boot when service is enabled).
   - `refresh-blueteam-agent` (pull latest BlueAgent repo changes and refresh containers).
   - `refresh-redteam-attack-engine` (pull latest Redteam repo changes and refresh containers).
+  - `refresh-cyber-shell-backend` (pull latest Cyber Shell Backend repo changes and refresh containers).
 
 DVWA has been removed from the stack.
 
@@ -158,4 +161,20 @@ Notes:
 To refresh later without rebuilding the template:
 ```bash
 sudo refresh-redteam-attack-engine
+```
+
+## Cyber Shell Backend Bundle
+
+The template clones the repo here:
+- `/opt/cyber-shell-backend`
+
+Notes:
+- The build clones `https://github.com/vytmse184728-png/cyber-shell-backend.git` (branch `main` by default).
+- If `.env.example` exists and `.env` is missing, the build copies `.env.example` to `.env`.
+- Images are pre-pulled during provisioning with `docker compose pull`.
+- The `web` image cache is also pre-built during provisioning with `docker compose build --pull web`; if that cache step fails, the template build still continues.
+
+To refresh later without rebuilding the template:
+```bash
+sudo refresh-cyber-shell-backend
 ```

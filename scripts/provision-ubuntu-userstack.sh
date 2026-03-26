@@ -8,6 +8,9 @@ USERSTACK_DST="/opt/capstone-userstack"
 REDTEAM_ENGINE_DST="/opt/redteam-attack-engine"
 REDTEAM_ENGINE_REPO_URL="${REDTEAM_ENGINE_REPO_URL:-https://github.com/CyberSecN00bers/Redteam-Attack-Engine-Minimal.git}"
 REDTEAM_ENGINE_REPO_REF="${REDTEAM_ENGINE_REPO_REF:-main}"
+CYBER_SHELL_BACKEND_DST="/opt/cyber-shell-backend"
+CYBER_SHELL_BACKEND_REPO_URL="${CYBER_SHELL_BACKEND_REPO_URL:-https://github.com/vytmse184728-png/cyber-shell-backend.git}"
+CYBER_SHELL_BACKEND_REPO_REF="${CYBER_SHELL_BACKEND_REPO_REF:-main}"
 BLUETEAM_AGENT_DST="/opt/capstone-blueteam-agent"
 BLUETEAM_AGENT_REPO_URL="${BLUETEAM_AGENT_REPO_URL:-https://github.com/CyberSecN00bers/Blueteam-Agent-Minimal.git}"
 BLUETEAM_AGENT_REPO_REF="${BLUETEAM_AGENT_REPO_REF:-main}"
@@ -47,6 +50,20 @@ retry() {
     i=$((i + 1))
     delay=$((delay * 2))
   done
+}
+
+resolve_compose_file() {
+  local stack_dir="$1"
+  local candidate
+
+  for candidate in docker-compose.yml docker-compose.yaml compose.yml compose.yaml; do
+    if [[ -f "${stack_dir}/${candidate}" ]]; then
+      printf '%s\n' "${stack_dir}/${candidate}"
+      return 0
+    fi
+  done
+
+  return 1
 }
 
 echo "[2.1/8] Ensure ubuntu login password"
@@ -197,6 +214,10 @@ if [[ -f "$USERSTACK_DST/scripts/refresh-redteam-attack-engine.sh" ]]; then
   ln -sf "$USERSTACK_DST/scripts/refresh-redteam-attack-engine.sh" /usr/local/bin/refresh-redteam-attack-engine
   chmod +x /usr/local/bin/refresh-redteam-attack-engine || true
 fi
+if [[ -f "$USERSTACK_DST/scripts/refresh-cyber-shell-backend.sh" ]]; then
+  ln -sf "$USERSTACK_DST/scripts/refresh-cyber-shell-backend.sh" /usr/local/bin/refresh-cyber-shell-backend
+  chmod +x /usr/local/bin/refresh-cyber-shell-backend || true
+fi
 
 echo "[5.1/8] Clone redteam attack engine repository"
 rm -rf "$REDTEAM_ENGINE_DST"
@@ -212,7 +233,21 @@ if [[ -f "$REDTEAM_ENGINE_DST/.env.example" && ! -f "$REDTEAM_ENGINE_DST/.env" ]
   cp "$REDTEAM_ENGINE_DST/.env.example" "$REDTEAM_ENGINE_DST/.env"
 fi
 
-echo "[5.2/8] Clone blueteam agent repository"
+echo "[5.2/8] Clone cyber shell backend repository"
+rm -rf "$CYBER_SHELL_BACKEND_DST"
+CYBER_SHELL_BACKEND_GIT_ATTEMPTS="${CYBER_SHELL_BACKEND_GIT_ATTEMPTS:-3}"
+CYBER_SHELL_BACKEND_GIT_DELAY="${CYBER_SHELL_BACKEND_GIT_DELAY:-10}"
+if ! retry "$CYBER_SHELL_BACKEND_GIT_ATTEMPTS" "$CYBER_SHELL_BACKEND_GIT_DELAY" \
+  git clone --depth 1 --branch "$CYBER_SHELL_BACKEND_REPO_REF" --single-branch "$CYBER_SHELL_BACKEND_REPO_URL" "$CYBER_SHELL_BACKEND_DST"; then
+  echo "Cyber shell backend git clone failed after ${CYBER_SHELL_BACKEND_GIT_ATTEMPTS} attempts" >&2
+  exit 1
+fi
+
+if [[ -f "$CYBER_SHELL_BACKEND_DST/.env.example" && ! -f "$CYBER_SHELL_BACKEND_DST/.env" ]]; then
+  cp "$CYBER_SHELL_BACKEND_DST/.env.example" "$CYBER_SHELL_BACKEND_DST/.env"
+fi
+
+echo "[5.3/8] Clone blueteam agent repository"
 rm -rf "$BLUETEAM_AGENT_DST"
 BLUETEAM_AGENT_GIT_ATTEMPTS="${BLUETEAM_AGENT_GIT_ATTEMPTS:-3}"
 BLUETEAM_AGENT_GIT_DELAY="${BLUETEAM_AGENT_GIT_DELAY:-10}"
@@ -230,7 +265,7 @@ if [[ -f "$BLUETEAM_AGENT_DST/.env.example" && ! -f "$BLUETEAM_AGENT_DST/.env" ]
   cp "$BLUETEAM_AGENT_DST/.env.example" "$BLUETEAM_AGENT_DST/.env"
 fi
 
-echo "[5.3/8] Configure Wazuh agent auto-enroll"
+echo "[5.4/8] Configure Wazuh agent auto-enroll"
 WAZUH_CONF="/var/ossec/etc/ossec.conf"
 USERSTACK_WAZUH_CONF="${USERSTACK_DST}/config/ossec.conf"
 if [[ -f "$USERSTACK_WAZUH_CONF" ]]; then
@@ -348,7 +383,23 @@ if command -v docker >/dev/null 2>&1; then
     exit 1
   fi
 
-  echo "[6.3/8] Pre-pull blueteam agent images"
+  echo "[6.3/8] Pre-pull cyber shell backend images"
+  CYBER_SHELL_BACKEND_COMPOSE_FILE="$(resolve_compose_file "$CYBER_SHELL_BACKEND_DST")" || {
+    echo "Missing compose file in ${CYBER_SHELL_BACKEND_DST}" >&2
+    exit 1
+  }
+  cd "$CYBER_SHELL_BACKEND_DST"
+  if ! retry "$COMPOSE_PULL_ATTEMPTS" "$COMPOSE_PULL_DELAY" docker compose -f "$CYBER_SHELL_BACKEND_COMPOSE_FILE" pull; then
+    echo "Cyber shell backend docker compose pull failed after ${COMPOSE_PULL_ATTEMPTS} attempts" >&2
+    exit 1
+  fi
+
+  echo "[6.4/8] Pre-build cyber shell backend image cache"
+  if ! retry "$FRONTEND_BUILD_ATTEMPTS" "$FRONTEND_BUILD_DELAY" docker compose -f "$CYBER_SHELL_BACKEND_COMPOSE_FILE" build --pull web; then
+    echo "Warning: docker compose build --pull web failed after ${FRONTEND_BUILD_ATTEMPTS} attempts; continuing without prebuilt cyber shell backend cache" >&2
+  fi
+
+  echo "[6.5/8] Pre-pull blueteam agent images"
   cd "$BLUETEAM_AGENT_DST"
   if ! retry "$COMPOSE_PULL_ATTEMPTS" "$COMPOSE_PULL_DELAY" docker compose pull; then
     echo "Blueteam agent docker compose pull failed after ${COMPOSE_PULL_ATTEMPTS} attempts" >&2

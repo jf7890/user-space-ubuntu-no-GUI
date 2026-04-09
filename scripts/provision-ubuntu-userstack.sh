@@ -427,3 +427,4 @@ rm -rf /tmp/capstone-userstack /tmp/scripts || true
 apt-get autoremove -y >/dev/null 2>&1 || true
 apt-get clean >/dev/null 2>&1
 rm -rf /var/lib/apt/lists/* || true
+sync; echo 3 | sudo tee /proc/sys/vm/drop_caches

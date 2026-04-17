@@ -69,12 +69,12 @@ variable "ubuntu_password_hash" {
 
 variable "cores" {
   type    = number
-  default = 2
+  default = 6
 }
 
 variable "memory" {
   type    = number
-  default = 4096
+  default = 6144
 }
 
 variable "ballooning_minimum" {
